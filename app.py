@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-import streamlit as st
+import streamlit as st 
+st.sidebar.image("logo.png", width=150)
 
 # Logo-vukku pakila indha code-a podunga
 # 'logo.png' endra file unga folder-la irukkanum
