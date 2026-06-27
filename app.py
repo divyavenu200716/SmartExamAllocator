@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+st.sidebar.image("logo.png", width=200)
 
 st.title("Smart Exam Allocator")
 
