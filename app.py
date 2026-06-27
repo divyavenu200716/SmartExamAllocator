@@ -1,5 +1,4 @@
-
-    import streamlit as st
+import streamlit as st
 import pandas as pd
 
 st.title("Smart Exam Allocator")
@@ -93,3 +92,4 @@ elif menu == "Exam Timetable":
 elif menu == "Staff Allocation":
     st.header("Staff Allocation")
     upload_and_display("Staff Data")
+    
