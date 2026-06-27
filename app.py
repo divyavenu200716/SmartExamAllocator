@@ -3,7 +3,12 @@ import pandas as pd
 
 st.title("Smart Exam Allocator")
 
-# 5 Options
+# Initialize session state for login
+if "staff_logged_in" not in st.session_state:
+    st.session_state.staff_logged_in = False
+    st.session_state.staff_name = ""
+
+# Sidebar Menu
 menu = st.sidebar.selectbox("Choose Module", [
     "Staff Login", 
     "Room Allocation", 
@@ -23,13 +28,26 @@ def upload_and_display(label):
         except Exception as e:
             st.error(f"Error reading file: {e}")
 
-# 5 Logic blocks
+# Logic for each module
 if menu == "Staff Login":
     st.header("Staff Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        st.success("Logged in successfully!")
+    
+    if not st.session_state.staff_logged_in:
+        name = st.text_input("Enter Name")
+        staff_id = st.text_input("Enter Staff ID")
+        if st.button("Login"):
+            if name and staff_id:
+                st.session_state.staff_logged_in = True
+                st.session_state.staff_name = name
+                st.success(f"Welcome {name}! Presence recorded.")
+                st.rerun() # Refresh pannum
+            else:
+                st.error("Please enter both Name and ID")
+    else:
+        st.success(f"Logged in as: {st.session_state.staff_name}")
+        if st.button("Logout"):
+            st.session_state.staff_logged_in = False
+            st.rerun()
 
 elif menu == "Room Allocation":
     st.header("Room Allocation")
@@ -46,4 +64,3 @@ elif menu == "Exam Timetable":
 elif menu == "Staff Allocation":
     st.header("Staff Allocation")
     upload_and_display("Staff Data")
-
