@@ -49,24 +49,6 @@ if menu == "Exam Timetable":
             st.table(df_tt) # st.table use panna azhaga display aagum
         except Exception as e:
             st.error(f"Error: {e}")
-            if menu == "Exam Timetable":
-    st.header("Upload Exam Timetable")
-    
-    # Excel file upload panna
-    uploaded_file = st.file_uploader("Upload your Exam Timetable (Excel)", type=["xlsx"])
-    
-    if uploaded_file is not None:
-        try:
-            # Excel file-a read pannuvom
-            df = pd.read_excel(uploaded_file)
-            
-            # Table-a display pannuvom
-            st.success("Timetable uploaded successfully!")
-            st.write("Here is your schedule:")
-            st.dataframe(df) # Ithu interactive table-a tharum
-            
-        except Exception as e:
-            st.error(f"Error reading file: {e}")
 import pandas as pd
 
 # 1. Menu selection
