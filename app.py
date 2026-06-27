@@ -1,7 +1,13 @@
 import streamlit as st
 import pandas as pd
+import streamlit as st
 
-# Logo setup
+# Logo-vukku pakila indha code-a podunga
+# 'logo.png' endra file unga folder-la irukkanum
+try:
+    st.sidebar.image("logo.png", use_container_width=True)
+except:
+    st.sidebar.write("Logo file not found!")# Logo setup
 st.logo("logo.png") 
 st.title("Smart Exam Allocator")
 
