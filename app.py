@@ -15,7 +15,7 @@ if menu == "Admin Panel":
 elif menu == "Scanner":
     st.header("🔍 Teacher Scanner")
     st.write("Scanner feature will be added soon.")
-    st.logo("logo.png") import streamlit as st
+    st.logo("logo.png") 
 import pandas as pd
 
 # Sidebar la puthu option
