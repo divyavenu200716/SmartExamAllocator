@@ -1,15 +1,15 @@
 import streamlit as st
 import pandas as pd
-import streamlit as st 
 
+# Page Configuration
+st.set_page_config(page_title="Exam Allocator", layout="wide")
 
-# Logo-vukku pakila indha code-a podunga
-# 'logo.png' endra file unga folder-la irukkanum
+# Logo setup (Make sure logo.png is in your GitHub repo)
 try:
-    st.sidebar.image("logo.png", use_container_width=True)
+    st.sidebar.image("logo.png", width=150)
 except:
-    st.sidebar.write("Logo file not found!")# Logo setup
-st.logo("logo.png") 
+    st.sidebar.write("Logo Missing")
+
 st.title("Smart Exam Allocator")
 
 # Session State Initialization
@@ -48,67 +48,76 @@ if menu == "Staff Login":
 elif menu == "Room Allocation":
     st.header("Room Allocation")
     handle_upload("rooms", ["Room No", "Capacity", "Block"])
-    with st.form("room_form"):
-        r_no = st.text_input("Room No")
-        cap = st.number_input("Capacity", min_value=1)
-        blk = st.text_input("Block")
-        if st.form_submit_button("Add Room"):
-            st.session_state.rooms = pd.concat([st.session_state.rooms, pd.DataFrame([{"Room No": r_no, "Capacity": cap, "Block": blk}])], ignore_index=True)
-    st.dataframe(st.session_state.rooms)
+    with st.expander("Add Manually"):
+        with st.form("room_form"):
+            r_no = st.text_input("Room No")
+            cap = st.number_input("Capacity", min_value=1)
+            blk = st.text_input("Block")
+            if st.form_submit_button("Add Room"):
+                new_row = pd.DataFrame([{"Room No": r_no, "Capacity": cap, "Block": blk}])
+                st.session_state.rooms = pd.concat([st.session_state.rooms, new_row], ignore_index=True)
+    # Edit & Delete enabled
+    st.session_state.rooms = st.data_editor(st.session_state.rooms, num_rows="dynamic", use_container_width=True)
 
 # 3. Student Details
 elif menu == "Student Details":
     st.header("Student Details")
     handle_upload("students", ["Name", "Dept", "Reg No", "Exam Code"])
-    with st.form("student_form"):
-        name = st.text_input("Name")
-        dept = st.text_input("Dept")
-        reg = st.text_input("Reg No")
-        ex = st.text_input("Exam Code")
-        if st.form_submit_button("Add Student"):
-            st.session_state.students = pd.concat([st.session_state.students, pd.DataFrame([{"Name": name, "Dept": dept, "Reg No": reg, "Exam Code": ex}])], ignore_index=True)
-    st.dataframe(st.session_state.students)
+    with st.expander("Add Manually"):
+        with st.form("student_form"):
+            name = st.text_input("Name")
+            dept = st.text_input("Dept")
+            reg = st.text_input("Reg No")
+            ex = st.text_input("Exam Code")
+            if st.form_submit_button("Add Student"):
+                new_row = pd.DataFrame([{"Name": name, "Dept": dept, "Reg No": reg, "Exam Code": ex}])
+                st.session_state.students = pd.concat([st.session_state.students, new_row], ignore_index=True)
+    # Edit & Delete enabled
+    st.session_state.students = st.data_editor(st.session_state.students, num_rows="dynamic", use_container_width=True)
 
 # 4. Exam Timetable
 elif menu == "Exam Timetable":
     st.header("Exam Timetable")
     handle_upload("timetable", ["Exam", "Date", "Dept", "Year", "Subject", "Code"])
-    with st.form("time_form"):
-        ex = st.text_input("Exam")
-        dt = st.text_input("Date")
-        dp = st.text_input("Dept")
-        yr = st.text_input("Year")
-        sub = st.text_input("Subject")
-        cod = st.text_input("Code")
-        if st.form_submit_button("Add Exam"):
-            st.session_state.timetable = pd.concat([st.session_state.timetable, pd.DataFrame([{"Exam": ex, "Date": dt, "Dept": dp, "Year": yr, "Subject": sub, "Code": cod}])], ignore_index=True)
-    st.dataframe(st.session_state.timetable)
+    with st.expander("Add Manually"):
+        with st.form("time_form"):
+            ex = st.text_input("Exam")
+            dt = st.date_input("Date")
+            dp = st.text_input("Dept")
+            yr = st.text_input("Year")
+            sub = st.text_input("Subject")
+            cod = st.text_input("Code")
+            if st.form_submit_button("Add Exam"):
+                new_row = pd.DataFrame([{"Exam": ex, "Date": str(dt), "Dept": dp, "Year": yr, "Subject": sub, "Code": cod}])
+                st.session_state.timetable = pd.concat([st.session_state.timetable, new_row], ignore_index=True)
+    # Edit & Delete enabled
+    st.session_state.timetable = st.data_editor(st.session_state.timetable, num_rows="dynamic", use_container_width=True)
 
 # 5. Staff Allocation
 elif menu == "Staff Allocation":
     st.header("Staff Allocation")
     handle_upload("staff", ["Staff Name", "Staff ID"])
-    with st.form("staff_form"):
-        s_name = st.text_input("Staff Name")
-        s_id = st.text_input("Staff ID")
-        if st.form_submit_button("Add Staff"):
-            st.session_state.staff = pd.concat([st.session_state.staff, pd.DataFrame([{"Staff Name": s_name, "Staff ID": s_id}])], ignore_index=True)
-    st.dataframe(st.session_state.staff)
+    with st.expander("Add Manually"):
+        with st.form("staff_form"):
+            s_name = st.text_input("Staff Name")
+            s_id = st.text_input("Staff ID")
+            if st.form_submit_button("Add Staff"):
+                new_row = pd.DataFrame([{"Staff Name": s_name, "Staff ID": s_id}])
+                st.session_state.staff = pd.concat([st.session_state.staff, new_row], ignore_index=True)
+    # Edit & Delete enabled
+    st.session_state.staff = st.data_editor(st.session_state.staff, num_rows="dynamic", use_container_width=True)
 
-# 6. Final Allocation Logic
+# 6. Final Allocation
 elif menu == "Final Allocation":
     st.header("Final Allocation")
     if st.button("Generate Allocation"):
         if not st.session_state.students.empty and not st.session_state.rooms.empty:
-            # Simple Logic: Assign students to rooms based on capacity
             all_students = st.session_state.students.copy()
             rooms = st.session_state.rooms.copy()
-            
             allocations = []
             student_idx = 0
-            
-            for index, room in rooms.iterrows():
-                capacity = room["Capacity"]
+            for _, room in rooms.iterrows():
+                capacity = int(room["Capacity"])
                 count = 0
                 while count < capacity and student_idx < len(all_students):
                     student = all_students.iloc[student_idx]
@@ -120,7 +129,6 @@ elif menu == "Final Allocation":
                     })
                     student_idx += 1
                     count += 1
-            
             st.success("Allocation Generated!")
             st.dataframe(pd.DataFrame(allocations))
         else:
