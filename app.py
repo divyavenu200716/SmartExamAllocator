@@ -48,7 +48,8 @@ if menu == "Exam Timetable":
             st.write("Exam Schedule Details:")
             st.table(df_tt) # st.table use panna azhaga display aagum
         except Exception as e:
-            st.error(f"Error: {e}")if menu == "Exam Timetable":
+            st.error(f"Error: {e}")
+            if menu == "Exam Timetable":
     st.header("Upload Exam Timetable")
     
     # Excel file upload panna
@@ -66,7 +67,6 @@ if menu == "Exam Timetable":
             
         except Exception as e:
             st.error(f"Error reading file: {e}")
-            import streamlit as st
 import pandas as pd
 
 # 1. Menu selection
