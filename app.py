@@ -36,7 +36,7 @@ if menu == "Exam Timetable":
 import pandas as pd
 
 # Sidebar la puthu option
-menu = st.sidebar.selectbox("Choose Module", ["Admin Panel", "Scanner", "Student Upload", "Exam Timetable"])
+menu = st.sidebar.selectbox("Choose Module", ["Admin Panel", "Scanner", "Student Upload"], key="unique_module_menu")
 
 if menu == "Exam Timetable":
     st.header("Upload Exam Timetable")
