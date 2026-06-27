@@ -92,4 +92,13 @@ elif menu == "Exam Timetable":
 elif menu == "Staff Allocation":
     st.header("Staff Allocation")
     upload_and_display("Staff Data")
+    import streamlit as st
+import pandas as pd
+
+# Logo-vai inga add pannunga
+st.logo("logo.png")
+
+st.title("Smart Exam Allocator")
+
+# ... (rest of your code)
     
