@@ -4,7 +4,7 @@ import pandas as pd
 # Page Configuration
 st.set_page_config(page_title="Exam Allocator", layout="wide")
 
-# Logo setup (Make sure logo.png is in your GitHub repo)
+# Logo setup
 try:
     st.sidebar.image("logo.png", width=150)
 except:
@@ -13,7 +13,6 @@ except:
 st.title("Smart Exam Allocator")
 
 # Session State Initialization
-if "staff_logged_in" not in st.session_state: st.session_state.staff_logged_in = False
 if "students" not in st.session_state: st.session_state.students = pd.DataFrame(columns=["Name", "Dept", "Reg No", "Exam Code"])
 if "rooms" not in st.session_state: st.session_state.rooms = pd.DataFrame(columns=["Room No", "Capacity", "Block"])
 if "timetable" not in st.session_state: st.session_state.timetable = pd.DataFrame(columns=["Exam", "Date", "Dept", "Year", "Subject", "Code"])
@@ -32,20 +31,11 @@ def handle_upload(state_key, expected_columns):
 
 # Sidebar Menu
 menu = st.sidebar.selectbox("Choose Module", [
-    "Staff Login", "Room Allocation", "Student Details", "Exam Timetable", "Staff Allocation", "Final Allocation"
+    "Room Allocation", "Student Details", "Exam Timetable", "Staff Allocation", "Final Allocation"
 ])
 
-# 1. Staff Login
-if menu == "Staff Login":
-    st.header("Staff Login")
-    name = st.text_input("Name")
-    s_id = st.text_input("Staff ID")
-    if st.button("Login"):
-        st.session_state.staff_logged_in = True
-        st.success(f"Welcome {name}!")
-
-# 2. Room Allocation
-elif menu == "Room Allocation":
+# 1. Room Allocation
+if menu == "Room Allocation":
     st.header("Room Allocation")
     handle_upload("rooms", ["Room No", "Capacity", "Block"])
     with st.expander("Add Manually"):
@@ -59,7 +49,7 @@ elif menu == "Room Allocation":
     # Edit & Delete enabled
     st.session_state.rooms = st.data_editor(st.session_state.rooms, num_rows="dynamic", use_container_width=True)
 
-# 3. Student Details
+# 2. Student Details
 elif menu == "Student Details":
     st.header("Student Details")
     handle_upload("students", ["Name", "Dept", "Reg No", "Exam Code"])
@@ -75,7 +65,7 @@ elif menu == "Student Details":
     # Edit & Delete enabled
     st.session_state.students = st.data_editor(st.session_state.students, num_rows="dynamic", use_container_width=True)
 
-# 4. Exam Timetable
+# 3. Exam Timetable
 elif menu == "Exam Timetable":
     st.header("Exam Timetable")
     handle_upload("timetable", ["Exam", "Date", "Dept", "Year", "Subject", "Code"])
@@ -93,7 +83,7 @@ elif menu == "Exam Timetable":
     # Edit & Delete enabled
     st.session_state.timetable = st.data_editor(st.session_state.timetable, num_rows="dynamic", use_container_width=True)
 
-# 5. Staff Allocation
+# 4. Staff Allocation
 elif menu == "Staff Allocation":
     st.header("Staff Allocation")
     handle_upload("staff", ["Staff Name", "Staff ID"])
@@ -107,7 +97,7 @@ elif menu == "Staff Allocation":
     # Edit & Delete enabled
     st.session_state.staff = st.data_editor(st.session_state.staff, num_rows="dynamic", use_container_width=True)
 
-# 6. Final Allocation
+# 5. Final Allocation
 elif menu == "Final Allocation":
     st.header("Final Allocation")
     if st.button("Generate Allocation"):
