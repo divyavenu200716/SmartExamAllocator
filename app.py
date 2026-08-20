@@ -1,94 +1,66 @@
 import streamlit as st
 import pandas as pd
+import io
+import os
+from allocator import process_allocation, get_student_classes, get_active_classes_from_timetable
 
-# Page Config
-st.set_page_config(page_title="Smart Exam Allocator", layout="wide")
+st.set_page_config(page_title="SMART SEAT", layout="wide")
 
-st.title("🎓 Smart Exam Allocator")
+st.title("🎓 SMART SEAT")
+st.markdown("Upload your exam details below to automatically generate the seating arrangement.")
 
-# Sidebar Menu
-menu = st.sidebar.selectbox("Choose Module", ["Admin Panel", "Scanner"])
+col1, col2, col3 = st.columns(3)
+with col1:
+    hall_file = st.file_uploader("1. Upload Hall Details (Excel)", type=['xlsx'])
+with col2:
+    student_file = st.file_uploader("2. Upload Student Details (Excel)", type=['xlsx'])
+with col3:
+    timetable_file = st.file_uploader("3. Upload Time Table (PDF or Excel)", type=['pdf', 'xlsx', 'xls'])
 
-if menu == "Admin Panel":
-    st.header("⚙️ Admin Panel")
-    st.write("Add your details here.")
-elif menu == "Scanner":
-    st.header("🔍 Teacher Scanner")
-    st.write("Scanner feature will be added soon.")
-    st.logo("logo.png") import streamlit as st
-import pandas as pd
+st.markdown("### 4. Exam Settings (Required for auto-detection)")
+col_t, col_d, col_s = st.columns([2, 1, 1])
+with col_t:
+    exam_title = st.text_input("Exam Title", value="PERIYAR UNIVERSITY THEORY EXAMINATIONS - APR/MAY")
+with col_d:
+    exam_date = st.text_input("Exam Date (e.g., 28-04-2025)", value="")
+with col_s:
+    exam_session = st.selectbox("Session", ["FN", "AN"])
 
-# Sidebar la puthu option
-menu = st.sidebar.selectbox("Choose Module", ["Admin Panel", "Scanner", "Student Upload", "Exam Timetable"])
-
-if menu == "Exam Timetable":
-    st.header("Upload Exam Timetable")
-    uploaded_tt = st.file_uploader("Choose an Excel file for Timetable", type=["xlsx"])
-    
-    if uploaded_tt is not None:
-        try:
-            df_tt = pd.read_excel(uploaded_tt)
-            st.write("Exam Schedule Details:")
-            st.table(df_tt) # st.table use panna azhaga display aagum
-        except Exception as e:
-            st.error(f"Error: {e}")
-            import streamlit as st
-import pandas as pd
-
-# Sidebar la puthu option
-menu = st.sidebar.selectbox("Choose Module", ["Admin Panel", "Scanner", "Student Upload", "Exam Timetable"])
-
-if menu == "Exam Timetable":
-    st.header("Upload Exam Timetable")
-    uploaded_tt = st.file_uploader("Choose an Excel file for Timetable", type=["xlsx"])
-    
-    if uploaded_tt is not None:
-        try:
-            df_tt = pd.read_excel(uploaded_tt)
-            st.write("Exam Schedule Details:")
-            st.table(df_tt) # st.table use panna azhaga display aagum
-        except Exception as e:
-            st.error(f"Error: {e}")if menu == "Exam Timetable":
-    st.header("Upload Exam Timetable")
-    
-    # Excel file upload panna
-    uploaded_file = st.file_uploader("Upload your Exam Timetable (Excel)", type=["xlsx"])
-    
-    if uploaded_file is not None:
-        try:
-            # Excel file-a read pannuvom
-            df = pd.read_excel(uploaded_file)
+selected_classes = []
+if student_file:
+    try:
+        available_classes = get_student_classes(student_file)
+        
+        # Try to auto-detect from PDF
+        auto_detected = []
+        if timetable_file and exam_date and exam_session:
+            detected = get_active_classes_from_timetable(timetable_file, exam_date, exam_session)
+            # Only keep detected classes that actually exist in the student file
+            auto_detected = [c for c in detected if c in available_classes]
             
-            # Table-a display pannuvom
-            st.success("Timetable uploaded successfully!")
-            st.write("Here is your schedule:")
-            st.dataframe(df) # Ithu interactive table-a tharum
-            
-        except Exception as e:
-            st.error(f"Error reading file: {e}")
-            import streamlit as st
-import pandas as pd
+        st.markdown("### 5. Classes taking the Exam")
+        st.info("💡 The classes below are automatically detected from the Time Table PDF based on your Date and Session! You can add or remove them if needed.")
+        selected_classes = st.multiselect("Confirm Classes", available_classes, default=auto_detected)
+    except Exception as e:
+        st.error(f"Could not parse student details: {e}")
 
-# 1. Menu selection
-menu = st.sidebar.selectbox("Choose Module", ["Student Upload", "Exam Timetable"])
-
-# 2. Student Upload logic
-if menu == "Student Upload":
-    st.header("Upload Student Details")
-    uploaded_file = st.file_uploader("Choose an Excel file", type=["xlsx"])
-    if uploaded_file is not None:
-        df = pd.read_excel(uploaded_file)
-        st.dataframe(df)
-
-# 3. Exam Timetable logic (IDHAI PUTHUSA ADD PANNUNGA)
-elif menu == "Exam Timetable":
-    st.header("Upload Exam Timetable")
-    uploaded_tt = st.file_uploader("Choose an Excel file for Timetable", type=["xlsx"])
-    
-    if uploaded_tt is not None:
-        try:
-            df_tt = pd.read_excel(uploaded_tt)
-            st.success("Timetable uploaded successfully!")
-            st.table(df_tt)
-        except Exception as e:
-            st.error(f"Error: {e}")
+if st.button("Generate Seating Arrangement"):
+    if hall_file and student_file and timetable_file and exam_date and selected_classes:
+        with st.spinner("Generating seating arrangement..."):
+            try:
+                output_excel_bytes = process_allocation(hall_file, student_file, timetable_file, exam_date, exam_session, selected_classes, exam_title)
+                
+                st.success("✅ Seating Arrangement Generated Successfully!")
+                
+                st.download_button(
+                    label="📥 Download Seating Arrangement",
+                    data=output_excel_bytes,
+                    file_name="Generated_Seating_Arrangement.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            except Exception as e:
+                import traceback
+                st.error(f"❌ An error occurred during generation: {e}")
+                st.code(traceback.format_exc())
+    else:
+        st.warning("⚠️ Please fill all fields and select at least one class to proceed.")
