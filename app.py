@@ -4,7 +4,7 @@ import io
 import os
 from allocator import process_allocation, get_student_classes, get_active_classes_from_timetable
 
-st.set_page_config(page_title="SMART SEAT", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="SMART SEAT", page_icon="logo.png", layout="wide")
 
 st.title("🎓 SMART SEAT")
 
