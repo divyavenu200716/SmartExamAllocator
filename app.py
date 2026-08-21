@@ -4,9 +4,15 @@ import io
 import os
 from allocator import process_allocation, get_student_classes, get_active_classes_from_timetable
 
-st.set_page_config(page_title="SMART SEAT", layout="wide")
+st.set_page_config(page_title="SMART SEAT", page_icon="logo.png", layout="wide")
 
-st.title("🎓 SMART SEAT")
+st.logo("logo.png")
+col1, col2 = st.columns([1, 10])
+with col1:
+    st.image("logo.png", use_container_width=True)
+with col2:
+    st.title("SMART SEAT")
+
 st.markdown("Upload your exam details below to automatically generate the seating arrangement.")
 
 col1, col2, col3 = st.columns(3)
