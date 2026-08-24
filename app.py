@@ -28,10 +28,20 @@ with st.expander("ℹ️ How to format your Excel files? (Click to view)"):
 col1, col2, col3 = st.columns(3)
 with col1:
     hall_file = st.file_uploader("1. Upload Hall Details (Excel)", type=['xlsx'])
+    with st.expander("👀 View Sample Format"):
+        st.markdown("Your Excel should look like this:")
+        st.table(pd.DataFrame({"HALL NO": ["101", "102"], "TOTAL SEAT": [30, 30]}))
+
 with col2:
     student_file = st.file_uploader("2. Upload Student Details (Excel)", type=['xlsx'])
+    with st.expander("👀 View Sample Format"):
+        st.markdown("Keep each department in a **separate sheet** (e.g., Sheet: `BCA`)")
+        st.table(pd.DataFrame({"REG.NO": ["23UCA01", "23UCA02"], "NAME": ["Arun", "Bala"], "YEAR": ["I-YEAR", "I-YEAR"]}))
+
 with col3:
     timetable_file = st.file_uploader("3. Upload Time Table (PDF or Excel)", type=['pdf', 'xlsx', 'xls'])
+    with st.expander("👀 View Sample Format"):
+        st.markdown("Just upload the standard University **PDF** or **Excel** Time Table directly!")
 
 st.markdown("### 4. Exam Settings (Required for auto-detection)")
 col_t, col_d, col_s = st.columns([2, 1, 1])
