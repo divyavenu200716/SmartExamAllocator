@@ -146,7 +146,36 @@ def get_student_classes(student_file):
 
 def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_session, selected_classes, exam_title):
     # 1. Read Hall Details
-    df_halls = pd.read_excel(hall_file)
+    if hall_file.name.lower().endswith('.pdf'):
+        import pypdf
+        reader = pypdf.PdfReader(hall_file)
+        halls = []
+        for page in reader.pages:
+            text = page.extract_text()
+            if text:
+                for line in text.split('\n'):
+                    parts = [p.strip() for p in line.split() if p.strip()]
+                    if len(parts) >= 2:
+                        hall_no = parts[0]
+                        try:
+                            total_seat = int(parts[1])
+                            rows = 5
+                            cols = 6
+                            if len(parts) >= 4:
+                                try:
+                                    rows = int(parts[2])
+                                    cols = int(parts[3])
+                                except:
+                                    pass
+                            if 0 < total_seat <= 200:
+                                halls.append({'HALL NO': hall_no, 'TOTAL SEAT': total_seat, 'ROWS': rows, 'COLUMNS': cols})
+                        except:
+                            pass
+        if not halls:
+            raise ValueError("Could not find valid hall data in the PDF. Ensure lines look like: '101 30 5 6'")
+        df_halls = pd.DataFrame(halls)
+    else:
+        df_halls = pd.read_excel(hall_file)
 
     # 2. Read Student Details (read all sheets)
     xls_students = pd.ExcelFile(student_file)

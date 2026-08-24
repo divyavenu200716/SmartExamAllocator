@@ -12,10 +12,11 @@ st.markdown("Upload your exam details below to automatically generate the seatin
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    hall_file = st.file_uploader("1. Upload Hall Details (Excel)", type=['xlsx'])
+    hall_file = st.file_uploader("1. Upload Hall Details (Excel or PDF)", type=['xlsx', 'pdf'])
     with st.expander("👀 View Sample Format"):
-        st.markdown("Your Excel should look like this:")
+        st.markdown("For **Excel**, your table should look like this:")
         st.table(pd.DataFrame({"HALL NO": ["101", "102"], "TOTAL SEAT": [30, 36], "ROWS": [5, 6], "COLUMNS": [6, 6]}))
+        st.markdown("For **PDF**, just ensure each line has: `HallNo TotalSeat Rows Cols` (e.g. `101 30 5 6`)")
 
 with col2:
     student_file = st.file_uploader("2. Upload Student Details (Excel)", type=['xlsx'])
