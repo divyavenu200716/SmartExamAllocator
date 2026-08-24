@@ -159,16 +159,19 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
                         hall_no = parts[0]
                         try:
                             total_seat = int(parts[1])
-                            rows = 5
-                            cols = 6
                             if len(parts) >= 4:
                                 try:
                                     rows = int(parts[2])
                                     cols = int(parts[3])
+                                    if 0 < total_seat <= 200:
+                                        halls.append({'HALL NO': hall_no, 'TOTAL SEAT': total_seat, 'ROWS': rows, 'COLUMNS': cols})
+                                    continue
                                 except:
                                     pass
+                            
+                            # If no rows/cols provided or parsing failed, just store TOTAL SEAT
                             if 0 < total_seat <= 200:
-                                halls.append({'HALL NO': hall_no, 'TOTAL SEAT': total_seat, 'ROWS': rows, 'COLUMNS': cols})
+                                halls.append({'HALL NO': hall_no, 'TOTAL SEAT': total_seat})
                         except:
                             pass
         if not halls:
@@ -246,16 +249,20 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
         for _, hall_row in df_halls.iterrows():
             hall_no = hall_row.get('HALL NO', 'UNKNOWN')
             
-            # Read ROWS and COLUMNS dynamically, default to 5x6
-            grid_cols = int(hall_row.get('COLUMNS', 6))
-            grid_rows = int(hall_row.get('ROWS', 5))
+            has_rows = 'ROWS' in hall_row and pd.notna(hall_row.get('ROWS'))
+            has_cols = 'COLUMNS' in hall_row and pd.notna(hall_row.get('COLUMNS'))
+            
+            grid_cols = int(hall_row['COLUMNS']) if has_cols else 6
+            grid_rows = int(hall_row['ROWS']) if has_rows else 5
             
             # If they provided TOTAL SEAT but no ROWS/COLUMNS, we calculate it:
-            if 'TOTAL SEAT' in hall_row and 'ROWS' not in hall_row:
-                total_seats = int(hall_row.get('TOTAL SEAT', 30))
+            if 'TOTAL SEAT' in hall_row and pd.notna(hall_row['TOTAL SEAT']) and not has_rows:
+                total_seats = int(hall_row['TOTAL SEAT'])
                 grid_rows = total_seats // grid_cols if total_seats % grid_cols == 0 else (total_seats // grid_cols) + 1
             else:
                 total_seats = int(hall_row.get('TOTAL SEAT', grid_rows * grid_cols))
+                if pd.isna(total_seats):
+                    total_seats = grid_rows * grid_cols
             
             max_cols = grid_cols * 2
             empty_middle = max_cols - 3
