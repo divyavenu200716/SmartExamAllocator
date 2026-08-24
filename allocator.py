@@ -225,6 +225,8 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
             if 'TOTAL SEAT' in hall_row and 'ROWS' not in hall_row:
                 total_seats = int(hall_row.get('TOTAL SEAT', 30))
                 grid_rows = total_seats // grid_cols if total_seats % grid_cols == 0 else (total_seats // grid_cols) + 1
+            else:
+                total_seats = int(hall_row.get('TOTAL SEAT', grid_rows * grid_cols))
             
             max_cols = grid_cols * 2
             empty_middle = max_cols - 3
@@ -233,12 +235,16 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
             hall_visual_columns = []
             
             last_dept = None
+            hall_assigned = 0
             
             for v_col in range(grid_cols):
+                if hall_assigned >= total_seats:
+                    break
+                    
                 col_students = []
                 
-                # Keep filling this column until it has `grid_rows` students
-                while len(col_students) < grid_rows:
+                # Keep filling this column until it has `grid_rows` students OR hall is full
+                while len(col_students) < grid_rows and hall_assigned < total_seats:
                     chosen_dept = None
                     
                     # Try to find a different department with enough students
@@ -257,13 +263,15 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
                     if chosen_dept is None:
                         break # No students left at all
                         
-                    # Calculate how many more students we need for this column
-                    needed = grid_rows - len(col_students)
+                    # Calculate how many more students we need for this column, respecting hall total cap
+                    max_allowed_for_hall = total_seats - hall_assigned
+                    needed = min(grid_rows - len(col_students), max_allowed_for_hall)
                     take_count = min(needed, len(students_by_dept[chosen_dept]))
                     
                     # Add them to the column
                     col_students.extend(students_by_dept[chosen_dept][:take_count])
                     students_by_dept[chosen_dept] = students_by_dept[chosen_dept][take_count:]
+                    hall_assigned += take_count
                     
                     # Update last_dept so we don't pick the same one consecutively (unless fallback)
                     last_dept = chosen_dept
@@ -272,10 +280,11 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
                     hall_visual_columns.append(col_students)
                 
             if not hall_visual_columns:
-                continue # No students assigned
+                continue # Skip empty halls
                 
             # Format the block for this hall
-            out_rows.append([f"Date & Session: {exam_date} - {exam_session}"] + [""] * 9 + [f"HALL NO : {hall_no}", ""])
+            out_rows.append([f"Date & Session: {exam_date} & {exam_session}"] + [""] * empty_middle + [f"HALL NO : {hall_no}", ""])
+
             
             # Calculate actual assigned total and department names
             total_assigned = sum(len(c) for c in hall_visual_columns)
