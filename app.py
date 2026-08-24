@@ -10,21 +10,6 @@ st.title("🎓 SMART SEAT")
 
 st.markdown("Upload your exam details below to automatically generate the seating arrangement.")
 
-with st.expander("ℹ️ How to format your Excel files? (Click to view)"):
-    st.markdown("""
-    **1. Hall Details (Excel):**
-    Must have columns named exactly **`HALL NO`** and **`TOTAL SEAT`**. 
-    *(Example: HALL NO: 101, TOTAL SEAT: 30)*
-    
-    **2. Student Details (Excel):**
-    - Each Department must be in a **separate Sheet** (e.g., Sheet name: `BCA`, `CS`).
-    - Inside each sheet, the header row must contain **`REG.NO`** (or `REGISTER NUMBER`).
-    - You can include an optional **`YEAR`** column (e.g., I-YEAR, II-YEAR).
-    
-    **3. Time Table (Excel / PDF):**
-    - Your standard university time table with Date, Session (FN/AN), and Subject Codes.
-    """)
-
 col1, col2, col3 = st.columns(3)
 with col1:
     hall_file = st.file_uploader("1. Upload Hall Details (Excel)", type=['xlsx'])
