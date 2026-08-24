@@ -216,11 +216,20 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
         
         for _, hall_row in df_halls.iterrows():
             hall_no = hall_row.get('HALL NO', 'UNKNOWN')
-            total_seats = int(hall_row.get('TOTAL SEAT', 30))
-            grid_cols = 6
-            grid_rows = total_seats // grid_cols if total_seats % grid_cols == 0 else (total_seats // grid_cols) + 1
             
-            # We have 6 visual columns to fill. Each visual column takes `grid_rows` students.
+            # Read ROWS and COLUMNS dynamically, default to 5x6
+            grid_cols = int(hall_row.get('COLUMNS', 6))
+            grid_rows = int(hall_row.get('ROWS', 5))
+            
+            # If they provided TOTAL SEAT but no ROWS/COLUMNS, we calculate it:
+            if 'TOTAL SEAT' in hall_row and 'ROWS' not in hall_row:
+                total_seats = int(hall_row.get('TOTAL SEAT', 30))
+                grid_rows = total_seats // grid_cols if total_seats % grid_cols == 0 else (total_seats // grid_cols) + 1
+            
+            max_cols = grid_cols * 2
+            empty_middle = max_cols - 3
+            
+            # We have visual columns to fill. Each visual column takes `grid_rows` students.
             hall_visual_columns = []
             
             last_dept = None
@@ -403,22 +412,23 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
                     
             dept_str = " & ".join(dept_parts)
             
-            out_rows.append([f"DEPT/SUB CODE : {dept_str}"] + [""] * 9 + [f"TOTAL : {total_assigned}", ""])
+            out_rows.append([f"DEPT/SUB CODE : {dept_str}"] + [""] * empty_middle + [f"TOTAL : {total_assigned}", ""])
             
-            header = ["REGISTER NUMBER", "SEAT NO", "REGISTER NUMBER", "SEAT NO", "REGISTER NUMBER", "SEAT NO", "REGISTER NUMBER", "SEAT NO", "REGISTER NUMBER", "SEAT NO", "REGISTER NUMBER", "SEAT NO"]
+            header = []
+            for _ in range(grid_cols):
+                header.extend(["REGISTER NUMBER", "SEAT NO"])
             out_rows.append(header)
             
             # Build the matrix
-            seat_matrix = [['' for _ in range(12)] for _ in range(grid_rows)]
+            seat_matrix = [['' for _ in range(max_cols)] for _ in range(grid_rows)]
             
-            # Map visual column index to logical column for seat numbering
-            log_col_map = [0, 3, 1, 4, 2, 5]
-            
+            # Simple logical column mapping: Fill left-to-right based on actual visual columns available
+            # Or you can do a zigzag if you want, but simple 0, 1, 2... mapping is robust for dynamic columns.
             for v_col_idx, col_students in enumerate(hall_visual_columns):
                 for row_idx, student in enumerate(col_students):
                     if row_idx < grid_rows:
-                        log_col = log_col_map[v_col_idx]
-                        seat_num = log_col * grid_rows + row_idx + 1
+                        # Simple sequence numbering down the column
+                        seat_num = v_col_idx * grid_rows + row_idx + 1
                         
                         seat_matrix[row_idx][v_col_idx*2] = student['REG_NO']
                         seat_matrix[row_idx][v_col_idx*2 + 1] = seat_num
@@ -430,7 +440,12 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
         if not out_rows:
             raise ValueError("No students could be mapped. Please check if the uploaded Student Details file has 'REG.NO' columns.")
 
-        out_df = pd.DataFrame(out_rows)
+        # At this point, find the global max_cols across all halls to ensure safe DataFrame dimensions
+        global_max_cols = max([len(r) for r in out_rows] + [0])
+        # Pad all rows to global_max_cols
+        padded_out_rows = [r + [''] * (global_max_cols - len(r)) for r in out_rows]
+        
+        out_df = pd.DataFrame(padded_out_rows)
         out_df.to_excel(writer, index=False, header=False, sheet_name='Seating')
         
         # Format the Excel sheet
@@ -444,7 +459,7 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
         )
         
         # Set column widths
-        for col_idx in range(1, 13): # A to L
+        for col_idx in range(1, global_max_cols + 1):
             col_letter = openpyxl.utils.get_column_letter(col_idx)
             if col_idx % 2 != 0:
                 ws.column_dimensions[col_letter].width = 18 # REGISTER NUMBER columns
@@ -452,7 +467,7 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
                 ws.column_dimensions[col_letter].width = 10 # SEAT NO columns
                 
         # Apply borders and alignments
-        for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=12):
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=global_max_cols):
             # Check if the row is entirely empty (separator row)
             is_empty_row = all(c.value is None or str(c.value).strip() == "" for c in row)
             
@@ -460,9 +475,20 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
                 first_val = str(row[0].value) if row[0].value else ""
                 is_header_row = (row[0].row == 1) or ("Date & Session" in first_val) or ("DEPT/SUB CODE" in first_val) or ("REGISTER NUMBER" in first_val)
                 
+                # Determine how many columns this specific hall uses (look for empty cells at the end)
+                # But to keep it simple, we draw borders across the entire populated length of this row.
+                row_length = 0
+                for idx, c in enumerate(row):
+                    if c.value is not None and str(c.value).strip() != "":
+                        row_length = idx + 1
+                
+                # If it's a header row, we might want to span it up to the width it should be.
+                # Actually, relying on global_max_cols is fine for borders as long as it looks uniform.
+                
                 for cell in row:
-                    # Draw borders for all cells in the active row
-                    cell.border = thin_border
+                    # Draw borders only if it's within the populated area or it's a global header
+                    if cell.column <= global_max_cols:
+                        cell.border = thin_border
                     
                     val_str = str(cell.value) if cell.value else ""
                     
@@ -482,19 +508,17 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
                             cell.font = Font(bold=True)
 
         # Merge cells AFTER setting borders
-        for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=12):
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=global_max_cols):
             first_cell_val = str(row[0].value) if row[0].value else ""
             
             if row[0].row == 1:
-                # Top title row: Merge A to L
-                ws.merge_cells(start_row=row[0].row, start_column=1, end_row=row[0].row, end_column=12)
+                # Top title row
+                ws.merge_cells(start_row=row[0].row, start_column=1, end_row=row[0].row, end_column=global_max_cols)
             elif "Date & Session:" in first_cell_val:
-                # Merge A to J (1 to 10) for Date, and K to L (11 to 12) for Hall
-                ws.merge_cells(start_row=row[0].row, start_column=1, end_row=row[0].row, end_column=10)
-                ws.merge_cells(start_row=row[0].row, start_column=11, end_row=row[0].row, end_column=12)
+                ws.merge_cells(start_row=row[0].row, start_column=1, end_row=row[0].row, end_column=global_max_cols-2)
+                ws.merge_cells(start_row=row[0].row, start_column=global_max_cols-1, end_row=row[0].row, end_column=global_max_cols)
             elif "DEPT/SUB CODE :" in first_cell_val:
-                # Merge A to J (1 to 10) for Dept, and K to L (11 to 12) for Total
-                ws.merge_cells(start_row=row[0].row, start_column=1, end_row=row[0].row, end_column=10)
-                ws.merge_cells(start_row=row[0].row, start_column=11, end_row=row[0].row, end_column=12)
+                ws.merge_cells(start_row=row[0].row, start_column=1, end_row=row[0].row, end_column=global_max_cols-2)
+                ws.merge_cells(start_row=row[0].row, start_column=global_max_cols-1, end_row=row[0].row, end_column=global_max_cols)
         
     return output.getvalue()

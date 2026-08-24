@@ -15,7 +15,7 @@ with col1:
     hall_file = st.file_uploader("1. Upload Hall Details (Excel)", type=['xlsx'])
     with st.expander("👀 View Sample Format"):
         st.markdown("Your Excel should look like this:")
-        st.table(pd.DataFrame({"HALL NO": ["101", "102"], "TOTAL SEAT": [30, 30]}))
+        st.table(pd.DataFrame({"HALL NO": ["101", "102"], "ROWS": [5, 6], "COLUMNS": [6, 6]}))
 
 with col2:
     student_file = st.file_uploader("2. Upload Student Details (Excel)", type=['xlsx'])
