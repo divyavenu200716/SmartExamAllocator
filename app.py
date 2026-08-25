@@ -19,9 +19,9 @@ with col1:
         st.markdown("For **PDF**, just ensure each line has: `HallNo TotalSeat Rows Cols` (e.g. `101 30 5 6`)")
 
 with col2:
-    student_files = st.file_uploader("2. Upload Student Details (Excel)", type=['xlsx'], accept_multiple_files=True)
+    student_files = st.file_uploader("2. Upload Student Details (Excel or PDF)", type=['xlsx', 'pdf'], accept_multiple_files=True)
     with st.expander("👀 View Sample Format"):
-        st.markdown("Upload **one or more Excel files**. Keep each department in a **separate sheet** (e.g., Sheet: `BCA`)")
+        st.markdown("Upload **one or more Excel/PDF files**.")
         st.table(pd.DataFrame({"REG.NO": ["23UCA01", "23UCA02"], "NAME": ["Arun", "Bala"], "YEAR": ["I-YEAR", "I-YEAR"]}))
 
 with col3:
