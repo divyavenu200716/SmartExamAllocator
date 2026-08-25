@@ -171,25 +171,26 @@ def extract_student_data(df_sheet):
             
     return df_data, reg_col, year_col, top_level_year
 
-def get_student_classes(student_file):
-    xls_students = pd.ExcelFile(student_file)
+def get_student_classes(student_files):
     classes = set()
-    for sheet in xls_students.sheet_names:
-        df_sheet = pd.read_excel(xls_students, sheet_name=sheet)
-        if len(df_sheet) > 0:
-            df_data, reg_col, year_col, top_level_year = extract_student_data(df_sheet)
-            
-            if year_col:
-                unique_years = df_data[year_col].dropna().unique()
-                for y in unique_years:
-                    classes.add(f"{sheet} - {str(y).strip()}")
-            elif top_level_year:
-                classes.add(f"{sheet} - {top_level_year}")
-            else:
-                classes.add(f"{sheet} - UNKNOWN YEAR")
+    for s_file in student_files:
+        xls_students = pd.ExcelFile(s_file)
+        for sheet in xls_students.sheet_names:
+            df_sheet = pd.read_excel(xls_students, sheet_name=sheet)
+            if len(df_sheet) > 0:
+                df_data, reg_col, year_col, top_level_year = extract_student_data(df_sheet)
+                
+                if year_col:
+                    unique_years = df_data[year_col].dropna().unique()
+                    for y in unique_years:
+                        classes.add(f"{sheet} - {str(y).strip()}")
+                elif top_level_year:
+                    classes.add(f"{sheet} - {top_level_year}")
+                else:
+                    classes.add(f"{sheet} - UNKNOWN YEAR")
     return sorted(list(classes))
 
-def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_session, selected_classes, exam_title):
+def process_allocation(hall_file, student_files, timetable_file, exam_date, exam_session, selected_classes, exam_title):
     # 1. Read Hall Details
     if hall_file.name.lower().endswith('.pdf'):
         import pypdf
@@ -225,43 +226,44 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
     else:
         df_halls = pd.read_excel(hall_file)
 
-    # 2. Read Student Details (read all sheets)
-    xls_students = pd.ExcelFile(student_file)
+    # 2. Read Student Details (read all sheets from all files)
     all_students = []
     
-    for sheet in xls_students.sheet_names:
-        df_sheet = pd.read_excel(xls_students, sheet_name=sheet)
-        if len(df_sheet) > 0:
-            df_data, reg_col, year_col, top_level_year = extract_student_data(df_sheet)
-            
-            if reg_col:
-                # Clean up empty rows based on reg_col
-                df_data = df_data.dropna(subset=[reg_col])
+    for s_file in student_files:
+        xls_students = pd.ExcelFile(s_file)
+        for sheet in xls_students.sheet_names:
+            df_sheet = pd.read_excel(xls_students, sheet_name=sheet)
+            if len(df_sheet) > 0:
+                df_data, reg_col, year_col, top_level_year = extract_student_data(df_sheet)
                 
-                for _, row in df_data.iterrows():
-                    # Determine the year for this specific student
-                    if year_col and not pd.isna(row[year_col]):
-                        student_year = str(row[year_col]).strip()
-                    elif top_level_year:
-                        student_year = top_level_year
-                    else:
-                        student_year = "UNKNOWN YEAR"
-                        
-                    class_key = f"{sheet} - {student_year}"
+                if reg_col:
+                    # Clean up empty rows based on reg_col
+                    df_data = df_data.dropna(subset=[reg_col])
                     
-                    if class_key in selected_classes:
-                        # Extract Name if possible (usually the column right after reg_col)
-                        cols_list = df_data.columns.tolist()
-                        reg_idx = cols_list.index(reg_col)
-                        name_val = ''
-                        if reg_idx + 1 < len(cols_list):
-                            name_val = row[cols_list[reg_idx + 1]]
+                    for _, row in df_data.iterrows():
+                        # Determine the year for this specific student
+                        if year_col and not pd.isna(row[year_col]):
+                            student_year = str(row[year_col]).strip()
+                        elif top_level_year:
+                            student_year = top_level_year
+                        else:
+                            student_year = "UNKNOWN YEAR"
                             
-                        all_students.append({
-                            'REG_NO': row[reg_col],
-                            'NAME': name_val,
-                            'DEPT': class_key
-                        })
+                        class_key = f"{sheet} - {student_year}"
+                        
+                        if class_key in selected_classes:
+                            # Extract Name if possible (usually the column right after reg_col)
+                            cols_list = df_data.columns.tolist()
+                            reg_idx = cols_list.index(reg_col)
+                            name_val = ''
+                            if reg_idx + 1 < len(cols_list):
+                                name_val = row[cols_list[reg_idx + 1]]
+                                
+                            all_students.append({
+                                'REG_NO': row[reg_col],
+                                'NAME': name_val,
+                                'DEPT': class_key
+                            })
     
     # 3. Dummy PDF reading for timetable (real extraction logic depends on PDF format)
     # reader = pypdf.PdfReader(timetable_file)

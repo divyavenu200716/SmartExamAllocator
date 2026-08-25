@@ -19,9 +19,9 @@ with col1:
         st.markdown("For **PDF**, just ensure each line has: `HallNo TotalSeat Rows Cols` (e.g. `101 30 5 6`)")
 
 with col2:
-    student_file = st.file_uploader("2. Upload Student Details (Excel)", type=['xlsx'])
+    student_files = st.file_uploader("2. Upload Student Details (Excel)", type=['xlsx'], accept_multiple_files=True)
     with st.expander("👀 View Sample Format"):
-        st.markdown("Keep each department in a **separate sheet** (e.g., Sheet: `BCA`)")
+        st.markdown("Upload **one or more Excel files**. Keep each department in a **separate sheet** (e.g., Sheet: `BCA`)")
         st.table(pd.DataFrame({"REG.NO": ["23UCA01", "23UCA02"], "NAME": ["Arun", "Bala"], "YEAR": ["I-YEAR", "I-YEAR"]}))
 
 with col3:
@@ -39,9 +39,9 @@ with col_s:
     exam_session = st.selectbox("Session", ["FN", "AN"])
 
 selected_classes = []
-if student_file:
+if student_files:
     try:
-        available_classes = get_student_classes(student_file)
+        available_classes = get_student_classes(student_files)
         
         # Try to auto-detect from PDF
         auto_detected = []
@@ -57,10 +57,10 @@ if student_file:
         st.error(f"Could not parse student details: {e}")
 
 if st.button("Generate Seating Arrangement"):
-    if hall_file and student_file and timetable_file and exam_date and selected_classes:
+    if hall_file and student_files and timetable_file and exam_date and selected_classes:
         with st.spinner("Generating seating arrangement..."):
             try:
-                output_excel_bytes = process_allocation(hall_file, student_file, timetable_file, exam_date, exam_session, selected_classes, exam_title)
+                output_excel_bytes = process_allocation(hall_file, student_files, timetable_file, exam_date, exam_session, selected_classes, exam_title)
                 
                 st.success("✅ Seating Arrangement Generated Successfully!")
                 
