@@ -112,36 +112,81 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
                         
     return list(active_classes)
 
+import re
+
+def extract_student_data(df_sheet):
+    header_idx = -1
+    reg_col = None
+    top_level_year = None
+    
+    # 1. Scan for YEAR in the top rows (0 to 10)
+    for i in range(min(10, len(df_sheet))):
+        row_vals = [str(x).strip().upper() for x in df_sheet.iloc[i].tolist() if pd.notna(x)]
+        full_row = " ".join(row_vals)
+        # Search for year patterns: I-YEAR, II YEAR, 1ST YEAR, 3rd, etc.
+        match = re.search(r'(I{1,3}|1ST|2ND|3RD|[1-3])\s*[-_]?\s*YEAR', full_row)
+        if match and not top_level_year:
+            val = match.group(1).replace('ST','').replace('ND','').replace('RD','')
+            if val == 'I' or val == '1': top_level_year = 'I-YEAR'
+            elif val == 'II' or val == '2': top_level_year = 'II-YEAR'
+            elif val == 'III' or val == '3': top_level_year = 'III-YEAR'
+
+    # 2. Scan for Reg Col header
+    for i in range(min(15, len(df_sheet))):
+        row_vals = [str(x).strip().upper() for x in df_sheet.iloc[i].tolist()]
+        for val in row_vals:
+            if 'REG' in val or 'ROLL' in val or 'REGISTER' in val:
+                header_idx = i
+                break
+        if header_idx != -1:
+            break
+            
+    if header_idx != -1:
+        headers = df_sheet.iloc[header_idx].tolist()
+        df_data = df_sheet.iloc[header_idx+1:].copy()
+        df_data.columns = headers
+        
+        # Find exact reg_col string
+        for c in headers:
+            if isinstance(c, str) and ('REG' in c.upper() or 'ROLL' in c.upper()):
+                reg_col = c
+                break
+    else:
+        # Fallback: Assume no explicit header, try to find a column with reg numbers
+        df_data = df_sheet.copy()
+        reg_col = df_data.columns[0] # Default to first column
+        for c in df_data.columns:
+            # Check if this column has values looking like "23UCA01" or numbers
+            valid_vals = [str(x) for x in df_data[c].dropna() if len(str(x).strip()) >= 4 and any(char.isdigit() for char in str(x))]
+            if len(valid_vals) > (len(df_data[c].dropna()) * 0.5): # At least 50% look like IDs
+                reg_col = c
+                break
+                
+    # 3. Check for specific YEAR column
+    year_col = None
+    for c in df_data.columns:
+        if isinstance(c, str) and 'YEAR' in c.upper():
+            year_col = c
+            break
+            
+    return df_data, reg_col, year_col, top_level_year
+
 def get_student_classes(student_file):
     xls_students = pd.ExcelFile(student_file)
     classes = set()
     for sheet in xls_students.sheet_names:
         df_sheet = pd.read_excel(xls_students, sheet_name=sheet)
-        if len(df_sheet) > 1:
-            header_idx = -1
-            for i in range(min(5, len(df_sheet))):
-                row_vals = [str(x).strip() for x in df_sheet.iloc[i].tolist()]
-                if 'REG.NO' in row_vals or 'REG NO' in row_vals or 'REGISTER NUMBER' in row_vals:
-                    header_idx = i
-                    break
-            if header_idx != -1:
-                headers = df_sheet.iloc[header_idx].tolist()
-                df_data = df_sheet.iloc[header_idx+1:].copy()
-                df_data.columns = headers
-                
-                # Check for year column
-                year_col = None
-                for c in headers:
-                    if isinstance(c, str) and 'YEAR' in c.upper():
-                        year_col = c
-                        break
-                
-                if year_col:
-                    unique_years = df_data[year_col].dropna().unique()
-                    for y in unique_years:
-                        classes.add(f"{sheet} - {str(y).strip()}")
-                else:
-                    classes.add(f"{sheet} - UNKNOWN YEAR")
+        if len(df_sheet) > 0:
+            df_data, reg_col, year_col, top_level_year = extract_student_data(df_sheet)
+            
+            if year_col:
+                unique_years = df_data[year_col].dropna().unique()
+                for y in unique_years:
+                    classes.add(f"{sheet} - {str(y).strip()}")
+            elif top_level_year:
+                classes.add(f"{sheet} - {top_level_year}")
+            else:
+                classes.add(f"{sheet} - UNKNOWN YEAR")
     return sorted(list(classes))
 
 def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_session, selected_classes, exam_title):
@@ -186,40 +231,35 @@ def process_allocation(hall_file, student_file, timetable_file, exam_date, exam_
     
     for sheet in xls_students.sheet_names:
         df_sheet = pd.read_excel(xls_students, sheet_name=sheet)
-        if len(df_sheet) > 1:
-            header_idx = -1
-            for i in range(min(5, len(df_sheet))):
-                row_vals = [str(x).strip() for x in df_sheet.iloc[i].tolist()]
-                if 'REG.NO' in row_vals or 'REG NO' in row_vals or 'REGISTER NUMBER' in row_vals:
-                    header_idx = i
-                    break
+        if len(df_sheet) > 0:
+            df_data, reg_col, year_col, top_level_year = extract_student_data(df_sheet)
             
-            if header_idx != -1:
-                headers = df_sheet.iloc[header_idx].tolist()
-                df_data = df_sheet.iloc[header_idx+1:].copy()
-                df_data.columns = headers
-                
-                # Find the exact column name that matches REG.NO
-                reg_col = [c for c in headers if isinstance(c, str) and 'REG' in c.upper()][0]
-                
-                # Check for year column
-                year_col = None
-                for c in headers:
-                    if isinstance(c, str) and 'YEAR' in c.upper():
-                        year_col = c
-                        break
-                
-                # Clean up empty rows
+            if reg_col:
+                # Clean up empty rows based on reg_col
                 df_data = df_data.dropna(subset=[reg_col])
                 
                 for _, row in df_data.iterrows():
-                    student_year = str(row[year_col]).strip() if year_col and not pd.isna(row[year_col]) else "UNKNOWN YEAR"
+                    # Determine the year for this specific student
+                    if year_col and not pd.isna(row[year_col]):
+                        student_year = str(row[year_col]).strip()
+                    elif top_level_year:
+                        student_year = top_level_year
+                    else:
+                        student_year = "UNKNOWN YEAR"
+                        
                     class_key = f"{sheet} - {student_year}"
                     
                     if class_key in selected_classes:
+                        # Extract Name if possible (usually the column right after reg_col)
+                        cols_list = df_data.columns.tolist()
+                        reg_idx = cols_list.index(reg_col)
+                        name_val = ''
+                        if reg_idx + 1 < len(cols_list):
+                            name_val = row[cols_list[reg_idx + 1]]
+                            
                         all_students.append({
                             'REG_NO': row[reg_col],
-                            'NAME': row.iloc[1] if len(row) > 1 else '',
+                            'NAME': name_val,
                             'DEPT': class_key
                         })
     
