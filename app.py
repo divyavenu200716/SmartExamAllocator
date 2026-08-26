@@ -56,24 +56,23 @@ if student_files:
     except Exception as e:
         st.error(f"Could not parse student details: {e}")
 
-if hall_file and student_files and timetable_file and exam_date and selected_classes:
-    st.markdown("---")
-    st.markdown("### 🎉 Output Ready!")
-    with st.spinner("Generating seating arrangement..."):
-        try:
-            output_excel_bytes = process_allocation(hall_file, student_files, timetable_file, exam_date, exam_session, selected_classes, exam_title)
-            
-            st.success("✅ Seating Arrangement Generated Successfully!")
-            
-            st.download_button(
-                label="⬇️ Download Seating Arrangement",
-                data=output_excel_bytes,
-                file_name="Generated_Seating_Arrangement.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-        except Exception as e:
-            import traceback
-            st.error(f"❌ An error occurred during generation: {e}")
-            st.code(traceback.format_exc())
-elif hall_file or student_files or timetable_file:
-    st.warning("⚠️ Please fill all fields and confirm classes to generate the seating arrangement.")
+if st.button("Generate Seating Arrangement"):
+    if hall_file and student_files and timetable_file and exam_date and selected_classes:
+        with st.spinner("Generating seating arrangement..."):
+            try:
+                output_excel_bytes = process_allocation(hall_file, student_files, timetable_file, exam_date, exam_session, selected_classes, exam_title)
+                
+                st.success("✅ Seating Arrangement Generated Successfully!")
+                
+                st.download_button(
+                    label="⬇️ Download Seating Arrangement",
+                    data=output_excel_bytes,
+                    file_name="Generated_Seating_Arrangement.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            except Exception as e:
+                import traceback
+                st.error(f"❌ An error occurred during generation: {e}")
+                st.code(traceback.format_exc())
+    else:
+        st.warning("⚠️ Please fill all fields and select at least one class to proceed.")
