@@ -5,115 +5,78 @@ import openpyxl
 from openpyxl.styles import Border, Side, Alignment, Font
 
 def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
-    active_classes = []
-    
     if not timetable_file:
         return []
-        
+    
     filename = timetable_file.name.lower()
-    
-    # Standardise user input exam_date
-    try:
-        exam_date_std = pd.to_datetime(exam_date, dayfirst=True).strftime('%d-%m-%Y')
-    except:
-        exam_date_std = exam_date
-    
-    if filename.endswith('.xlsx') or filename.endswith('.xls'):
-        df = pd.read_excel(timetable_file, header=None)
-        header_idx = -1
-        for idx, row in df.iterrows():
-            row_str = ' '.join([str(x).upper() for x in row.values])
-            if 'DATE' in row_str and 'SESSION' in row_str and 'DEPARTMENT' in row_str:
-                header_idx = idx
-                break
-                
-        if header_idx != -1:
-            df.columns = df.iloc[header_idx]
-            df = df[header_idx+1:]
-            
-            current_date = ''
-            current_sess = ''
-            
-            for idx, row in df.iterrows():
-                d = row.get('Date', '')
-                if pd.notnull(d) and str(d).strip() != '':
-                    try:
-                        current_date = pd.to_datetime(d, dayfirst=True).strftime('%d-%m-%Y')
-                    except:
-                        current_date = str(d).strip()
-                    
-                s = str(row.get('Session', '')).strip()
-                if s != 'nan' and s != '':
-                    current_sess = s
-                    
-                if current_date == exam_date_std and current_sess == exam_session:
-                    yr = str(row.get('Year', '')).strip().upper()
-                    dpt = str(row.get('Department', '')).strip().upper()
-                    y_str = ''
-                    if yr == 'I' or yr == '1': y_str = 'I-YEAR'
-                    elif yr == 'II' or yr == '2': y_str = 'II-YEAR'
-                    elif yr == 'III' or yr == 'OG' or yr == '3': y_str = 'III-YEAR'
-                    
-                    dept_list = []
-                    if 'ALL' in dpt:
-                        dept_list = ['CS', 'AI&DS', 'B.COM', 'B A TAMIL', 'CHE', 'BCA', 'BBA', 'MIB']
-                    else:
-                        for dept_name in ['CS', 'AI&DS', 'B.COM', 'B A TAMIL', 'CHE', 'BCA', 'BBA', 'MIB']:
-                            if dept_name.replace('.', '') in dpt.replace('.', ''):
-                                dept_list.append(dept_name)
-                    
-                    for dept_name in dept_list:
-                        if y_str:
-                            active_classes.append(f'{dept_name} - {y_str}')
-                            
-        return sorted(list(set(active_classes)))
-        
-    # Fallback to PDF logic
-    reader = pypdf.PdfReader(timetable_file)
     import re
     clean_date = re.sub(r'\D', '', exam_date)
     clean_session = exam_session.upper().strip()
-
     active_classes = set()
-    current_degree = ''
-    current_sem = -1
-
-    for page in reader.pages:
-        text = page.extract_text()
-        if not text:
-            continue
-        for line in text.split('\n'):
-            if line.startswith('DEGREE NAME:'):
-                current_degree = line.split('DEGREE NAME:')[1].strip().upper()
-            elif 'SEMESTER :' in line:
-                sem_str = line.split('SEMESTER')[0].strip()
-                if sem_str.isdigit():
-                    current_sem = int(sem_str)
+    
+    # Generic Tracker Logic
+    def parse_line(line, recent_dept, recent_year):
+        upper_line = line.upper()
+        temp_dept = []
+        if 'COMPUTER SCIENCE' in upper_line or 'CS' in upper_line.split(): temp_dept.append('CS')
+        if 'ARTIFICIAL INTELLIGENCE' in upper_line or 'DATA SCIENCE' in upper_line or 'AI&DS' in upper_line: temp_dept.append('AI&DS')
+        if 'COMMERCE' in upper_line or 'B.COM' in upper_line: temp_dept.append('B.COM')
+        if 'TAMIL' in upper_line: temp_dept.append('B A TAMIL')
+        if 'CHEMISTRY' in upper_line or 'CHE' in upper_line.split(): temp_dept.append('CHE')
+        if 'COMPUTER APPLICATIONS' in upper_line or 'BCA' in upper_line.split(): temp_dept.append('BCA')
+        if 'BBA' in upper_line.split(): temp_dept.append('BBA')
+        if 'MIB' in upper_line.split(): temp_dept.append('MIB')
+        
+        if temp_dept:
+            recent_dept = temp_dept
             
-            # Check if line has the exam
-            clean_line = re.sub(r'[\s\-/\.]', '', line).upper()
-            if clean_date in clean_line and clean_session in clean_line:
-                year = ''
-                if current_sem in [1, 2]: year = 'I-YEAR'
-                elif current_sem in [3, 4]: year = 'II-YEAR'
-                elif current_sem in [5, 6]: year = 'III-YEAR'
+        yr = extract_year_from_text(upper_line)
+        # Also check semester digits if year not found
+        if not yr and 'SEMESTER' in upper_line:
+            match = re.search(r'SEMESTER\s*[:\-]?\s*([1-6])', upper_line)
+            if match:
+                sem = int(match.group(1))
+                if sem in [1, 2]: yr = 'I-YEAR'
+                elif sem in [3, 4]: yr = 'II-YEAR'
+                elif sem in [5, 6]: yr = 'III-YEAR'
                 
-                # Map degree to sheet
-                sheets = []
-                if 'COMPUTER SCIENCE' in current_degree or 'CS' in current_degree: sheets.append('CS')
-                if 'ARTIFICIAL INTELLIGENCE' in current_degree or 'DATA SCIENCE' in current_degree or 'AI&DS' in current_degree: sheets.append('AI&DS')
-                if 'COMMERCE' in current_degree or 'B.COM' in current_degree: sheets.append('B.COM')
-                if 'TAMIL' in current_degree: sheets.append('B A TAMIL')
-                if 'CHEMISTRY' in current_degree or 'CHE' in current_degree: sheets.append('CHE')
-                if 'COMPUTER APPLICATIONS' in current_degree or 'BCA' in current_degree: sheets.append('BCA')
-                if 'FOUNDATION' in current_degree:
-                    sheets = ['CS', 'AI&DS', 'B.COM', 'B A TAMIL', 'CHE', 'BCA', 'BBA', 'MIB']
+        if yr:
+            recent_year = yr
+            
+        clean_line = re.sub(r'[\s\-/\.]', '', upper_line)
+        if clean_date in clean_line and clean_session in clean_line:
+            matched_depts = temp_dept if temp_dept else recent_dept
+            matched_year = yr if yr else recent_year
+            
+            if 'FOUNDATION' in upper_line or 'ALL' in upper_line.split():
+                matched_depts = ['CS', 'AI&DS', 'B.COM', 'B A TAMIL', 'CHE', 'BCA', 'BBA', 'MIB']
                 
-                for s in sheets:
-                    if year:
-                        active_classes.add(f'{s} - {year}')
-                        
-    return list(active_classes)
+            for s in matched_depts:
+                if matched_year:
+                    active_classes.add(f'{s} - {matched_year}')
+                    
+        return recent_dept, recent_year
+
+    if filename.endswith('.xlsx') or filename.endswith('.xls'):
+        df = pd.read_excel(timetable_file, header=None)
+        recent_dept = []
+        recent_year = ''
+        for idx, row in df.iterrows():
+            row_str = ' '.join([str(x) for x in row.values if pd.notna(x)])
+            recent_dept, recent_year = parse_line(row_str, recent_dept, recent_year)
+    else:
+        import pypdf
+        reader = pypdf.PdfReader(timetable_file)
+        recent_dept = []
+        recent_year = ''
+        for page in reader.pages:
+            text = page.extract_text()
+            if not text:
+                continue
+            for line in text.split('\n'):
+                recent_dept, recent_year = parse_line(line, recent_dept, recent_year)
+
+    return sorted(list(set(active_classes)))
 
 import re
 
