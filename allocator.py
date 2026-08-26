@@ -50,9 +50,9 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
                     yr = str(row.get('Year', '')).strip().upper()
                     dpt = str(row.get('Department', '')).strip().upper()
                     y_str = ''
-                    if yr == 'I': y_str = '1-YEAR'
-                    elif yr == 'II': y_str = '2-YEAR'
-                    elif yr == 'III' or yr == 'OG': y_str = '3-YEAR'
+                    if yr == 'I' or yr == '1': y_str = 'I-YEAR'
+                    elif yr == 'II' or yr == '2': y_str = 'II-YEAR'
+                    elif yr == 'III' or yr == 'OG' or yr == '3': y_str = 'III-YEAR'
                     
                     dept_list = []
                     if 'ALL' in dpt:
@@ -91,9 +91,9 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
             # Check if line has the exam
             if search_str in line.replace(' ', '').upper():
                 year = ''
-                if current_sem in [1, 2]: year = '1-YEAR'
-                elif current_sem in [3, 4]: year = '2-YEAR'
-                elif current_sem in [5, 6]: year = '3-YEAR'
+                if current_sem in [1, 2]: year = 'I-YEAR'
+                elif current_sem in [3, 4]: year = 'II-YEAR'
+                elif current_sem in [5, 6]: year = 'III-YEAR'
                 
                 # Map degree to sheet
                 sheets = []
