@@ -145,30 +145,40 @@ def extract_student_data(df_sheet, fallback_year=None):
         df_data = df_sheet.iloc[header_idx+1:].copy()
         # Ensure column names are unique strings
         df_data.columns = [str(c) if pd.notna(c) else f"Unnamed_{j}" for j, c in enumerate(headers)]
+        
+        # 3. Explicit Header Check (Highest Priority)
+        for c in df_data.columns:
+            cup = str(c).upper()
+            if ('REG' in cup or 'ROLL' in cup or 'ID' in cup) and 'NAME' not in cup:
+                reg_col = c
+                break
     else:
         df_data = df_sheet.copy()
         
-    # 3. Find reg_col purely by analyzing column contents (score-based)
-    best_col = None
-    best_score = -1
-    
-    for c in df_data.columns:
-        col_data = df_data[c].dropna().astype(str)
-        if len(col_data) == 0:
-            continue
-            
-        # Count how many cells look like a register number (>=4 chars, contains digit)
-        valid_count = sum(1 for x in col_data if len(x.strip()) >= 4 and any(char.isdigit() for char in x))
-        score = valid_count / len(col_data)
+    # 4. Find reg_col purely by analyzing column contents (score-based fallback)
+    if not reg_col:
+        best_col = None
+        best_score = -1
         
-        if score > best_score:
-            best_score = score
-            best_col = c
+        for c in df_data.columns:
+            col_data = df_data[c].dropna().astype(str)
+            if len(col_data) == 0:
+                continue
+                
+            # Count how many cells look like a register number (>=2 chars, contains digit)
+            valid_count = sum(1 for x in col_data if len(x.strip()) >= 2 and any(char.isdigit() for char in x))
+            score = valid_count / len(col_data)
             
-    if best_score > 0:
-        reg_col = best_col
-    else:
-        reg_col = df_data.columns[0] if len(df_data.columns) > 0 else None
+            # Penalize the S.No column implicitly if it's strictly sequential 1,2,3
+            if valid_count > 0 and 'NAME' not in str(c).upper():
+                if score > best_score:
+                    best_score = score
+                    best_col = c
+                
+        if best_score > 0:
+            reg_col = best_col
+        else:
+            reg_col = df_data.columns[0] if len(df_data.columns) > 0 else None
 
     # 4. Check for specific YEAR column
     year_col = None
@@ -288,13 +298,13 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                         for w in words:
                             w = w.strip()
                             # Heuristic: looks like a reg number (>= 5 chars, has digit, and isn't purely punctuation)
-                            if len(w) >= 5 and any(c.isdigit() for c in w) and any(c.isalnum() for c in w):
+                            if len(w) >= 3 and any(c.isdigit() for c in w) and any(c.isalnum() for c in w):
                                 import re
                                 matches = re.findall(r'[A-Za-z0-9]+', w)
                                 best_match = w
                                 for m in matches:
                                     if any(ch.isdigit() for ch in m):
-                                        if len(m) >= 4:
+                                        if len(m) >= 2:
                                             best_match = m
                                             break
                                         
@@ -341,7 +351,7 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                                 best_match = raw_reg
                                 for m in matches:
                                     if any(ch.isdigit() for ch in m):
-                                        if len(m) >= 4:
+                                        if len(m) >= 2:
                                             best_match = m
                                             break
                                         
