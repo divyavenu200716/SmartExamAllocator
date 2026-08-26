@@ -283,8 +283,17 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                             w = w.strip()
                             # Heuristic: looks like a reg number (>= 5 chars, has digit, and isn't purely punctuation)
                             if len(w) >= 5 and any(c.isdigit() for c in w) and any(c.isalnum() for c in w):
+                                import re
+                                matches = re.findall(r'[A-Za-z0-9]+', w)
+                                best_match = w
+                                for m in matches:
+                                    if any(ch.isdigit() for ch in m):
+                                        if len(m) >= 4:
+                                            best_match = m
+                                            break
+                                        
                                 all_students.append({
-                                    'REG_NO': w,
+                                    'REG_NO': best_match,
                                     'NAME': '', # Hard to extract names reliably from PDF
                                     'DEPT': class_key
                                 })
@@ -320,8 +329,18 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                                         name_val = row[c]
                                         break
                                         
+                                raw_reg = str(row[reg_col])
+                                import re
+                                matches = re.findall(r'[A-Za-z0-9]+', raw_reg)
+                                best_match = raw_reg
+                                for m in matches:
+                                    if any(ch.isdigit() for ch in m):
+                                        if len(m) >= 4:
+                                            best_match = m
+                                            break
+                                        
                                 all_students.append({
-                                    'REG_NO': row[reg_col],
+                                    'REG_NO': best_match,
                                     'NAME': name_val,
                                     'DEPT': class_key
                                 })
