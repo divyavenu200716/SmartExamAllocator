@@ -133,38 +133,44 @@ def extract_student_data(df_sheet, fallback_year=None):
         if yr and not top_level_year:
             top_level_year = yr
 
-    # 2. Scan for Reg Col header
+    # 2. Find the header row by looking for REG/ROLL/REGISTER
     for i in range(min(25, len(df_sheet))):
         row_vals = [str(x).strip().upper() for x in df_sheet.iloc[i].tolist()]
-        for val in row_vals:
-            if 'REG' in val or 'ROLL' in val or 'REGISTER' in val:
-                header_idx = i
-                break
-        if header_idx != -1:
+        if any('REG' in val or 'ROLL' in val or 'REGISTER' in val for val in row_vals):
+            header_idx = i
             break
-            
+
     if header_idx != -1:
         headers = df_sheet.iloc[header_idx].tolist()
         df_data = df_sheet.iloc[header_idx+1:].copy()
-        df_data.columns = headers
-        
-        # Find exact reg_col string
-        for c in headers:
-            if isinstance(c, str) and ('REG' in c.upper() or 'ROLL' in c.upper()):
-                reg_col = c
-                break
+        # Ensure column names are unique strings
+        df_data.columns = [str(c) if pd.notna(c) else f"Unnamed_{j}" for j, c in enumerate(headers)]
     else:
-        # Fallback: Assume no explicit header, try to find a column with reg numbers
         df_data = df_sheet.copy()
-        reg_col = df_data.columns[0] # Default to first column
-        for c in df_data.columns:
-            # Check if this column has values looking like "23UCA01" or numbers
-            valid_vals = [str(x) for x in df_data[c].dropna() if len(str(x).strip()) >= 4 and any(char.isdigit() for char in str(x))]
-            if len(valid_vals) > (len(df_data[c].dropna()) * 0.5): # At least 50% look like IDs
-                reg_col = c
-                break
-                
-    # 3. Check for specific YEAR column
+        
+    # 3. Find reg_col purely by analyzing column contents (score-based)
+    best_col = None
+    best_score = -1
+    
+    for c in df_data.columns:
+        col_data = df_data[c].dropna().astype(str)
+        if len(col_data) == 0:
+            continue
+            
+        # Count how many cells look like a register number (>=4 chars, contains digit)
+        valid_count = sum(1 for x in col_data if len(x.strip()) >= 4 and any(char.isdigit() for char in x))
+        score = valid_count / len(col_data)
+        
+        if score > best_score:
+            best_score = score
+            best_col = c
+            
+    if best_score > 0:
+        reg_col = best_col
+    else:
+        reg_col = df_data.columns[0] if len(df_data.columns) > 0 else None
+
+    # 4. Check for specific YEAR column
     year_col = None
     for c in df_data.columns:
         if isinstance(c, str) and 'YEAR' in c.upper():
