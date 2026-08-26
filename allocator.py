@@ -70,12 +70,14 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
         
     # Fallback to PDF logic
     reader = pypdf.PdfReader(timetable_file)
-    search_str = (exam_date + exam_session).upper().replace(" ", "")
-    
+    import re
+    clean_date = re.sub(r'\D', '', exam_date)
+    clean_session = exam_session.upper().strip()
+
     active_classes = set()
     current_degree = ''
     current_sem = -1
-    
+
     for page in reader.pages:
         text = page.extract_text()
         if not text:
@@ -89,7 +91,8 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
                     current_sem = int(sem_str)
             
             # Check if line has the exam
-            if search_str in line.replace(' ', '').upper():
+            clean_line = re.sub(r'[\s\-/\.]', '', line).upper()
+            if clean_date in clean_line and clean_session in clean_line:
                 year = ''
                 if current_sem in [1, 2]: year = 'I-YEAR'
                 elif current_sem in [3, 4]: year = 'II-YEAR'

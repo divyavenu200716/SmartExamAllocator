@@ -47,8 +47,15 @@ if student_files:
         auto_detected = []
         if timetable_file and exam_date and exam_session:
             detected = get_active_classes_from_timetable(timetable_file, exam_date, exam_session)
-            # Only keep detected classes that actually exist in the student file
-            auto_detected = [c for c in detected if c in available_classes]
+            # Fuzzy match detected classes against available classes
+            auto_set = set()
+            for d in detected:
+                d_clean = d.replace(' ', '').upper()
+                for a in available_classes:
+                    a_clean = a.replace(' ', '').upper()
+                    if d_clean == a_clean or d_clean in a_clean or a_clean in d_clean:
+                        auto_set.add(a)
+            auto_detected = list(auto_set)
             
         st.markdown("### 5. Classes taking the Exam")
         st.info("💡 The classes below are automatically detected from the Time Table PDF based on your Date and Session! You can add or remove them if needed.")
