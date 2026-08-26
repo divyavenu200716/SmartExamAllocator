@@ -114,22 +114,30 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
 
 import re
 
-def extract_student_data(df_sheet):
+def extract_year_from_text(text):
+    if not text:
+        return None
+    text = str(text).upper()
+    match = re.search(r'(I{1,3}|1ST|2ND|3RD|[1-3])\s*[-_]?\s*YEAR', text)
+    if match:
+        val = match.group(1).replace('ST','').replace('ND','').replace('RD','')
+        if val == 'I' or val == '1': return 'I-YEAR'
+        if val == 'II' or val == '2': return 'II-YEAR'
+        if val == 'III' or val == '3': return 'III-YEAR'
+    return None
+
+def extract_student_data(df_sheet, fallback_year=None):
     header_idx = -1
     reg_col = None
-    top_level_year = None
+    top_level_year = fallback_year
     
     # 1. Scan for YEAR in the top rows (0 to 10)
     for i in range(min(10, len(df_sheet))):
         row_vals = [str(x).strip().upper() for x in df_sheet.iloc[i].tolist() if pd.notna(x)]
         full_row = " ".join(row_vals)
-        # Search for year patterns: I-YEAR, II YEAR, 1ST YEAR, 3rd, etc.
-        match = re.search(r'(I{1,3}|1ST|2ND|3RD|[1-3])\s*[-_]?\s*YEAR', full_row)
-        if match and not top_level_year:
-            val = match.group(1).replace('ST','').replace('ND','').replace('RD','')
-            if val == 'I' or val == '1': top_level_year = 'I-YEAR'
-            elif val == 'II' or val == '2': top_level_year = 'II-YEAR'
-            elif val == 'III' or val == '3': top_level_year = 'III-YEAR'
+        yr = extract_year_from_text(full_row)
+        if yr and not top_level_year:
+            top_level_year = yr
 
     # 2. Scan for Reg Col header
     for i in range(min(15, len(df_sheet))):
@@ -174,28 +182,31 @@ def extract_student_data(df_sheet):
 def get_student_classes(student_files):
     classes = set()
     for s_file in student_files:
+        file_yr = extract_year_from_text(s_file.name)
         if s_file.name.lower().endswith('.pdf'):
             import pypdf
             reader = pypdf.PdfReader(s_file)
-            top_level_year = "UNKNOWN YEAR"
+            top_level_year = file_yr
             sheet = s_file.name.replace('.pdf', '')
-            for page in reader.pages:
-                text = page.extract_text()
-                if text:
-                    match = re.search(r'(I{1,3}|1ST|2ND|3RD|[1-3])\s*[-_]?\s*YEAR', text.upper())
-                    if match:
-                        val = match.group(1).replace('ST','').replace('ND','').replace('RD','')
-                        if val == 'I' or val == '1': top_level_year = 'I-YEAR'
-                        elif val == 'II' or val == '2': top_level_year = 'II-YEAR'
-                        elif val == 'III' or val == '3': top_level_year = 'III-YEAR'
-                        break
+            if not top_level_year:
+                for page in reader.pages:
+                    text = page.extract_text()
+                    if text:
+                        yr = extract_year_from_text(text)
+                        if yr:
+                            top_level_year = yr
+                            break
+            if not top_level_year:
+                top_level_year = "UNKNOWN YEAR"
             classes.add(f"{sheet} - {top_level_year}")
         else:
             xls_students = pd.ExcelFile(s_file)
             for sheet in xls_students.sheet_names:
                 df_sheet = pd.read_excel(xls_students, sheet_name=sheet)
                 if len(df_sheet) > 0:
-                    df_data, reg_col, year_col, top_level_year = extract_student_data(df_sheet)
+                    sheet_yr = extract_year_from_text(sheet)
+                    fallback = sheet_yr if sheet_yr else file_yr
+                    df_data, reg_col, year_col, top_level_year = extract_student_data(df_sheet, fallback_year=fallback)
                     
                     if year_col:
                         unique_years = df_data[year_col].dropna().unique()
@@ -247,23 +258,24 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
     all_students = []
     
     for s_file in student_files:
+        file_yr = extract_year_from_text(s_file.name)
         if s_file.name.lower().endswith('.pdf'):
             import pypdf
             reader = pypdf.PdfReader(s_file)
             sheet = s_file.name.replace('.pdf', '')
-            top_level_year = "UNKNOWN YEAR"
+            top_level_year = file_yr
             
-            # First pass to find year
-            for page in reader.pages:
-                text = page.extract_text()
-                if text:
-                    match = re.search(r'(I{1,3}|1ST|2ND|3RD|[1-3])\s*[-_]?\s*YEAR', text.upper())
-                    if match:
-                        val = match.group(1).replace('ST','').replace('ND','').replace('RD','')
-                        if val == 'I' or val == '1': top_level_year = 'I-YEAR'
-                        elif val == 'II' or val == '2': top_level_year = 'II-YEAR'
-                        elif val == 'III' or val == '3': top_level_year = 'III-YEAR'
-                        break
+            # First pass to find year if not in filename
+            if not top_level_year:
+                for page in reader.pages:
+                    text = page.extract_text()
+                    if text:
+                        yr = extract_year_from_text(text)
+                        if yr:
+                            top_level_year = yr
+                            break
+            if not top_level_year:
+                top_level_year = "UNKNOWN YEAR"
                         
             class_key = f"{sheet} - {top_level_year}"
             
@@ -287,7 +299,9 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
             for sheet in xls_students.sheet_names:
                 df_sheet = pd.read_excel(xls_students, sheet_name=sheet)
                 if len(df_sheet) > 0:
-                    df_data, reg_col, year_col, top_level_year = extract_student_data(df_sheet)
+                    sheet_yr = extract_year_from_text(sheet)
+                    fallback = sheet_yr if sheet_yr else file_yr
+                    df_data, reg_col, year_col, top_level_year = extract_student_data(df_sheet, fallback_year=fallback)
                     
                     if reg_col:
                         # Clean up empty rows based on reg_col
