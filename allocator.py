@@ -313,13 +313,13 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                             class_key = f"{sheet} - {student_year}"
                             
                             if class_key in selected_classes:
-                                # Extract Name if possible (usually the column right after reg_col)
-                                cols_list = df_data.columns.tolist()
-                                reg_idx = cols_list.index(reg_col)
                                 name_val = ''
-                                if reg_idx + 1 < len(cols_list):
-                                    name_val = row[cols_list[reg_idx + 1]]
-                                    
+                                cols_list = list(df_data.columns)
+                                for c in cols_list:
+                                    if isinstance(c, str) and 'NAME' in c.upper():
+                                        name_val = row[c]
+                                        break
+                                        
                                 all_students.append({
                                     'REG_NO': row[reg_col],
                                     'NAME': name_val,
