@@ -45,12 +45,12 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
         yr = extract_year_from_text(upper_line)
         # Also check semester digits if year not found
         if not yr and 'SEMESTER' in upper_line:
-            match = re.search(r'SEMESTER\s*[:\-]?\s*([1-6])', upper_line)
+            match = re.search(r'SEMESTER\s*[:\-]?\s*(I{1,3}|IV|V|VI|[1-6])', upper_line)
             if match:
-                sem = int(match.group(1))
-                if sem in [1, 2]: yr = 'I-YEAR'
-                elif sem in [3, 4]: yr = 'II-YEAR'
-                elif sem in [5, 6]: yr = 'III-YEAR'
+                sem_str = match.group(1)
+                if sem_str in ['1', '2', 'I', 'II']: yr = 'I-YEAR'
+                elif sem_str in ['3', '4', 'III', 'IV']: yr = 'II-YEAR'
+                elif sem_str in ['5', '6', 'V', 'VI']: yr = 'III-YEAR'
                 
         if yr:
             recent_year = yr

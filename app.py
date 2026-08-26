@@ -57,15 +57,8 @@ if student_files:
                         auto_set.add(a)
             auto_detected = list(auto_set)
             
-            # Fallback: If we still couldn't detect anything, select ALL available classes
-            if not auto_detected:
-                auto_detected = available_classes
-        else:
-            # If no timetable is uploaded, default to all available classes
-            auto_detected = available_classes
-            
         st.markdown("### 5. Classes taking the Exam")
-        st.info("💡 Classes are auto-detected from your Time Table. If detection fails, all classes are selected by default. You can add or remove them as needed.")
+        st.info("💡 The classes below are automatically detected from the Time Table PDF based on your Date and Session! You can add or remove them if needed.")
         selected_classes = st.multiselect("Confirm Classes", available_classes, default=auto_detected)
     except Exception as e:
         st.error(f"Could not parse student details: {e}")
