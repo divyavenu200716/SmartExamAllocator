@@ -9,8 +9,20 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
         return []
     
     filename = timetable_file.name.lower()
+    
+    # Generate Date Variations for robust matching
+    date_variations = []
     import re
-    clean_date = re.sub(r'\D', '', exam_date)
+    try:
+        import pandas as pd
+        dt = pd.to_datetime(exam_date, dayfirst=True)
+        date_variations.append(dt.strftime('%d%m%Y')) # 09042026
+        date_variations.append(f"{dt.day}{dt.month}{dt.year}") # 942026
+        date_variations.append(f"{dt.day:02d}{dt.month}{dt.year}") # 0942026
+        date_variations.append(f"{dt.day}{dt.month:02d}{dt.year}") # 9042026
+    except:
+        date_variations.append(re.sub(r'\D', '', exam_date))
+        
     clean_session = exam_session.upper().strip()
     active_classes = set()
     
@@ -44,7 +56,15 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
             recent_year = yr
             
         clean_line = re.sub(r'[\s\-/\.]', '', upper_line)
-        if clean_date in clean_line and clean_session in clean_line:
+        
+        # Check if ANY of our date variations are in the line
+        date_matched = False
+        for dv in date_variations:
+            if dv and dv in clean_line:
+                date_matched = True
+                break
+                
+        if date_matched and clean_session in clean_line:
             matched_depts = temp_dept if temp_dept else recent_dept
             matched_year = yr if yr else recent_year
             
