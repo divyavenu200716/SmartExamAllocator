@@ -118,12 +118,20 @@ def extract_year_from_text(text):
     if not text:
         return None
     text = str(text).upper()
-    match = re.search(r'(I{1,3}|1ST|2ND|3RD|[1-3])\s*[-_]?\s*YEAR', text)
+    # Aggressively look for I, II, III, 1, 2, 3 followed by YEAR, YR, or degree names
+    pattern = r'\b(I{1,3}|1ST|2ND|3RD|[1-3])\s*[-_]?\s*(YEAR|YR|B\.?SC|B\.?COM|BCA|BBA|B\.?A\b|DEGREE|BRANCH|SEM)'
+    match = re.search(pattern, text)
     if match:
         val = match.group(1).replace('ST','').replace('ND','').replace('RD','')
         if val == 'I' or val == '1': return 'I-YEAR'
         if val == 'II' or val == '2': return 'II-YEAR'
         if val == 'III' or val == '3': return 'III-YEAR'
+    
+    # If still not found, check if the text contains EXACTLY something like "I YEAR" somewhere else
+    if '1ST YEAR' in text or 'I YEAR' in text or 'I-YEAR' in text: return 'I-YEAR'
+    if '2ND YEAR' in text or 'II YEAR' in text or 'II-YEAR' in text: return 'II-YEAR'
+    if '3RD YEAR' in text or 'III YEAR' in text or 'III-YEAR' in text: return 'III-YEAR'
+    
     return None
 
 def extract_student_data(df_sheet, fallback_year=None):
@@ -131,8 +139,8 @@ def extract_student_data(df_sheet, fallback_year=None):
     reg_col = None
     top_level_year = fallback_year
     
-    # 1. Scan for YEAR in the top rows (0 to 10)
-    for i in range(min(10, len(df_sheet))):
+    # 1. Scan for YEAR in the top rows (0 to 20)
+    for i in range(min(20, len(df_sheet))):
         row_vals = [str(x).strip().upper() for x in df_sheet.iloc[i].tolist() if pd.notna(x)]
         full_row = " ".join(row_vals)
         yr = extract_year_from_text(full_row)
@@ -140,7 +148,7 @@ def extract_student_data(df_sheet, fallback_year=None):
             top_level_year = yr
 
     # 2. Scan for Reg Col header
-    for i in range(min(15, len(df_sheet))):
+    for i in range(min(25, len(df_sheet))):
         row_vals = [str(x).strip().upper() for x in df_sheet.iloc[i].tolist()]
         for val in row_vals:
             if 'REG' in val or 'ROLL' in val or 'REGISTER' in val:
