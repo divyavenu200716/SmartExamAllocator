@@ -149,9 +149,16 @@ def extract_student_data(df_sheet, fallback_year=None):
         # 3. Explicit Header Check (Highest Priority)
         for c in df_data.columns:
             cup = str(c).upper()
-            if ('REG' in cup or 'ROLL' in cup or 'ID' in cup) and 'NAME' not in cup:
+            if 'SUB REG NO' in cup or 'SUB REG' in cup:
                 reg_col = c
                 break
+                
+        if not reg_col:
+            for c in df_data.columns:
+                cup = str(c).upper()
+                if ('REG' in cup or 'ROLL' in cup or 'ID' in cup) and 'NAME' not in cup:
+                    reg_col = c
+                    break
     else:
         df_data = df_sheet.copy()
         
