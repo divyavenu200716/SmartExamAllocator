@@ -4,7 +4,7 @@ import io
 import os
 from allocator import process_allocation, get_student_classes, get_active_classes_from_timetable
 
-st.set_page_config(page_title="SMART SEAT", page_icon="logo.png", layout="centered")
+st.set_page_config(page_title="KASC SMART SEAT", page_icon="logo.png", layout="centered")
 
 # Hide Streamlit Watermark, Menu, Footer, and Creator Avatar
 hide_streamlit_style = """
@@ -22,7 +22,7 @@ img[alt*="Creator"] {display: none !important;}
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-st.title("🎓 SMART SEAT")
+st.title("🎓 KASC SMART SEAT")
 st.markdown("### 🪑 Automated Seating Arrangement Generator")
 st.info("👈 Please use the sidebar on the left to upload your files and configure the exam settings.")
 
