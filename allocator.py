@@ -229,6 +229,23 @@ def get_student_classes(student_files):
             if not top_level_year:
                 top_level_year = "UNKNOWN YEAR"
             classes.add(f"{sheet} - {top_level_year}")
+        elif s_file.name.lower().endswith('.csv'):
+            if hasattr(s_file, 'seek'): s_file.seek(0)
+            sheet = s_file.name.replace('.csv', '')
+            df_sheet = pd.read_csv(s_file)
+            if len(df_sheet) > 0:
+                sheet_yr = extract_year_from_text(sheet)
+                fallback = sheet_yr if sheet_yr else file_yr
+                df_data, reg_col, year_col, top_level_year = extract_student_data(df_sheet, fallback_year=fallback)
+
+                if year_col:
+                    unique_years = df_data[year_col].dropna().unique()
+                    for y in unique_years:
+                        classes.add(f"{sheet} - {str(y).strip()}")
+                elif top_level_year:
+                    classes.add(f"{sheet} - {top_level_year}")
+                else:
+                    classes.add(f"{sheet} - UNKNOWN YEAR")
         else:
             xls_students = pd.ExcelFile(s_file)
             for sheet in xls_students.sheet_names:
@@ -281,6 +298,8 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
         if not halls:
             raise ValueError("Could not find valid hall data in the PDF. Ensure lines look like: '101 30 5 6'")
         df_halls = pd.DataFrame(halls)
+    elif hall_file.name.lower().endswith('.csv'):
+        df_halls = pd.read_csv(hall_file)
     else:
         df_halls = pd.read_excel(hall_file)
 
@@ -333,6 +352,53 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                                     'NAME': '', # Hard to extract names reliably from PDF
                                     'DEPT': class_key
                                 })
+        elif s_file.name.lower().endswith('.csv'):
+            if hasattr(s_file, 'seek'): s_file.seek(0)
+            sheet = s_file.name.replace('.csv', '')
+            df_sheet = pd.read_csv(s_file)
+            if len(df_sheet) > 0:
+                sheet_yr = extract_year_from_text(sheet)
+                fallback = sheet_yr if sheet_yr else file_yr
+                df_data, reg_col, year_col, top_level_year = extract_student_data(df_sheet, fallback_year=fallback)
+
+                if reg_col:
+                    # Clean up empty rows based on reg_col
+                    df_data = df_data.dropna(subset=[reg_col])
+
+                    for _, row in df_data.iterrows():
+                        # Determine the year for this specific student
+                        if year_col and not pd.isna(row[year_col]):
+                            student_year = str(row[year_col]).strip()
+                        elif top_level_year:
+                            student_year = top_level_year
+                        else:
+                            student_year = "UNKNOWN YEAR"
+
+                        class_key = f"{sheet} - {student_year}"
+                        
+                        if class_key in selected_classes:
+                            name_val = ''
+                            cols_list = list(df_data.columns)
+                            for c in cols_list:
+                                if isinstance(c, str) and 'NAME' in c.upper():
+                                    name_val = row[c]
+                                    break
+                                    
+                            raw_reg = str(row[reg_col])
+                            import re
+                            matches = re.findall(r'[A-Za-z0-9]+', raw_reg)
+                            best_match = raw_reg
+                            for m in matches:
+                                if any(ch.isdigit() for ch in m):
+                                    if len(m) >= 2:
+                                        best_match = m
+                                        break
+                                    
+                            all_students.append({
+                                'REG_NO': best_match,
+                                'NAME': name_val,
+                                'DEPT': class_key
+                            })
         else:
             xls_students = pd.ExcelFile(s_file)
             for sheet in xls_students.sheet_names:
