@@ -31,13 +31,14 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
         upper_line = line.upper()
         temp_dept = []
         if 'COMPUTER SCIENCE' in upper_line or 'CS' in upper_line.split(): temp_dept.append('CS')
-        if 'ARTIFICIAL INTELLIGENCE' in upper_line or 'DATA SCIENCE' in upper_line or 'AI&DS' in upper_line: temp_dept.append('AI&DS')
-        if 'COMMERCE' in upper_line or 'B.COM' in upper_line: temp_dept.append('B.COM')
+        if 'ARTIFICIAL INTELLIGENCE' in upper_line or 'DATA SCIENCE' in upper_line or 'AI&DS' in upper_line or 'AIDS' in upper_line.split(): temp_dept.append('AIDS')
+        if 'COMMERCE' in upper_line or 'B.COM' in upper_line or 'BCOM' in upper_line.split(): temp_dept.append('BCOM')
         if 'TAMIL' in upper_line: temp_dept.append('B A TAMIL')
         if 'CHEMISTRY' in upper_line or 'CHE' in upper_line.split(): temp_dept.append('CHE')
-        if 'COMPUTER APPLICATIONS' in upper_line or 'BCA' in upper_line.split(): temp_dept.append('BCA')
-        if 'BBA' in upper_line.split(): temp_dept.append('BBA')
-        if 'MIB' in upper_line.split(): temp_dept.append('MIB')
+        if 'COMPUTER APPLICATIONS' in upper_line or 'BCA' in upper_line.split() or 'B.C.A' in upper_line: temp_dept.append('BCA')
+        if 'BBA' in upper_line.split() or 'B.B.A' in upper_line: temp_dept.append('BBA')
+        if 'MIB' in upper_line.split() or 'M.I.B' in upper_line: temp_dept.append('MIB')
+        if 'CCA' in upper_line.split() or 'C.C.A' in upper_line or 'CORPORATE' in upper_line: temp_dept.append('CCA')
         
         if temp_dept:
             recent_dept = temp_dept
@@ -69,7 +70,7 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
             matched_year = yr if yr else recent_year
             
             if 'FOUNDATION' in upper_line or 'ALL' in upper_line.split():
-                matched_depts = ['CS', 'AI&DS', 'B.COM', 'B A TAMIL', 'CHE', 'BCA', 'BBA', 'MIB']
+                matched_depts = ['CS', 'AIDS', 'BCOM', 'B A TAMIL', 'CHE', 'BCA', 'BBA', 'MIB', 'CCA']
                 
             for s in matched_depts:
                 if matched_year:
