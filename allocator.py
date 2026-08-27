@@ -20,6 +20,10 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
         date_variations.append(f"{dt.day}{dt.month}{dt.year}") # 942026
         date_variations.append(f"{dt.day:02d}{dt.month}{dt.year}") # 0942026
         date_variations.append(f"{dt.day}{dt.month:02d}{dt.year}") # 9042026
+        date_variations.append(dt.strftime('%d%b%Y').upper()) # 09APR2026
+        date_variations.append(dt.strftime('%d%B%Y').upper()) # 09APRIL2026
+        date_variations.append(f"{dt.day}{dt.strftime('%b').upper()}{dt.year}") # 9APR2026
+        date_variations.append(f"{dt.day}{dt.strftime('%B').upper()}{dt.year}") # 9APRIL2026
     except:
         date_variations.append(re.sub(r'\D', '', exam_date))
         
@@ -65,7 +69,13 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
                 date_matched = True
                 break
                 
-        if date_matched and clean_session in clean_line:
+        session_matched = False
+        if clean_session == 'FN' and ('FN' in clean_line or 'FORENOON' in clean_line or 'MORNING' in clean_line):
+            session_matched = True
+        elif clean_session == 'AN' and ('AN' in clean_line or 'AFTERNOON' in clean_line or 'EVENING' in clean_line):
+            session_matched = True
+
+        if date_matched and session_matched:
             matched_depts = temp_dept if temp_dept else recent_dept
             matched_year = yr if yr else recent_year
             
@@ -75,6 +85,8 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
             for s in matched_depts:
                 if matched_year:
                     active_classes.add(f'{s} - {matched_year}')
+                else:
+                    active_classes.add(s)
                     
         return recent_dept, recent_year
 
