@@ -22,7 +22,14 @@ img[alt*="Creator"] {display: none !important;}
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-st.title("🎓 KASC SMART SEAT")
+col1, col2 = st.columns([1, 5])
+with col1:
+    try:
+        st.image("logo.png", use_container_width=True)
+    except:
+        pass
+with col2:
+    st.title("🎓 KASC SMART SEAT")
 st.markdown("### 🪑 Automated Seating Arrangement Generator")
 st.info("👈 Please use the sidebar on the left to upload your files and configure the exam settings.")
 
