@@ -24,11 +24,11 @@ with st.sidebar.expander("📂 2. Student Details (Excel/PDF)", expanded=False):
 with st.sidebar.expander("📂 3. Time Table (Excel/PDF)", expanded=False):
     timetable_file = st.file_uploader("Select Time Table", type=['pdf', 'xlsx', 'xls', 'csv'], label_visibility="collapsed")
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("### ⚙️ 4. Exam Settings")
-exam_title = st.sidebar.text_input("Exam Title", value="PERIYAR UNIVERSITY THEORY EXAMINATIONS - APR/MAY")
-exam_date = st.sidebar.text_input("Exam Date (e.g., 28-04-2025)", value="")
-exam_session = st.sidebar.selectbox("Session", ["FN", "AN"])
+with st.sidebar.expander("⚙️ 4. Exam Settings", expanded=False):
+    st.markdown("*(Required for auto-detection)*")
+    exam_title = st.text_input("Exam Title", value="PERIYAR UNIVERSITY THEORY EXAMINATIONS - APR/MAY")
+    exam_date = st.text_input("Exam Date (e.g., 28-04-2025)", value="")
+    exam_session = st.selectbox("Session", ["FN", "AN"])
 
 selected_classes = []
 if student_files:
@@ -51,13 +51,13 @@ if student_files:
                         auto_set.add(a)
             auto_detected = list(auto_set)
             
-        st.sidebar.markdown("### 🎓 5. Classes taking the Exam")
-        if auto_detected:
-            st.sidebar.success("✨ Classes auto-detected from Time Table!")
-        else:
-            st.sidebar.info("💡 Enter Date & Session to auto-detect classes")
-            
-        selected_classes = st.sidebar.multiselect("Confirm Classes", available_classes, default=auto_detected)
+        with st.sidebar.expander("🎓 5. Classes taking the Exam", expanded=False):
+            if auto_detected:
+                st.success("✨ Classes auto-detected from Time Table!")
+            else:
+                st.info("💡 Enter Date & Session to auto-detect classes")
+                
+            selected_classes = st.multiselect("Confirm Classes", available_classes, default=auto_detected, label_visibility="collapsed")
     except Exception as e:
         st.sidebar.error(f"Could not parse student details: {e}")
 
