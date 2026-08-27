@@ -6,6 +6,18 @@ from allocator import process_allocation, get_student_classes, get_active_classe
 
 st.set_page_config(page_title="SMART SEAT", page_icon="logo.png", layout="centered")
 
+# Hide Streamlit Watermark, Menu, and Footer
+hide_streamlit_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+a[href="https://streamlit.io/cloud"] {display: none !important;}
+[data-testid="stHeader"] {display: none !important;}
+</style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 st.title("🎓 SMART SEAT")
 st.markdown("### 🪑 Automated Seating Arrangement Generator")
 st.info("👈 Please use the sidebar on the left to upload your files and configure the exam settings.")
