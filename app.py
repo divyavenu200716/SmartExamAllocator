@@ -29,14 +29,11 @@ with col3:
     with st.expander("👀 View Sample Format"):
         st.markdown("Just upload the standard University **PDF** or **Excel** Time Table directly!")
 
-st.markdown("### 4. Exam Settings (Required for auto-detection)")
-col_t, col_d, col_s = st.columns([2, 1, 1])
-with col_t:
-    exam_title = st.text_input("Exam Title", value="PERIYAR UNIVERSITY THEORY EXAMINATIONS - APR/MAY")
-with col_d:
-    exam_date = st.text_input("Exam Date (e.g., 28-04-2025)", value="")
-with col_s:
-    exam_session = st.selectbox("Session", ["FN", "AN"])
+st.sidebar.markdown("### ⚙️ 4. Exam Settings")
+st.sidebar.markdown("*(Required for auto-detection)*")
+exam_title = st.sidebar.text_input("Exam Title", value="PERIYAR UNIVERSITY THEORY EXAMINATIONS - APR/MAY")
+exam_date = st.sidebar.text_input("Exam Date (e.g., 28-04-2025)", value="")
+exam_session = st.sidebar.selectbox("Session", ["FN", "AN"])
 
 selected_classes = []
 if student_files:
@@ -48,7 +45,7 @@ if student_files:
         if timetable_file and exam_date and exam_session:
             detected = get_active_classes_from_timetable(timetable_file, exam_date, exam_session)
             if not detected:
-                st.warning("⚠️ Auto-detection couldn't find any classes for this Date & Session. (Tips: Check if the date is typed correctly, or if your Timetable PDF is a scanned image which cannot be read automatically).")
+                st.sidebar.warning("⚠️ Auto-detection couldn't find classes.")
             # Fuzzy match detected classes against available classes
             auto_set = set()
             for d in detected:
@@ -59,29 +56,36 @@ if student_files:
                         auto_set.add(a)
             auto_detected = list(auto_set)
             
-        st.markdown("### 5. Classes taking the Exam")
-        st.info("💡 The classes below are automatically detected from the Time Table PDF based on your Date and Session! You can add or remove them if needed.")
-        selected_classes = st.multiselect("Confirm Classes", available_classes, default=auto_detected)
+        st.sidebar.markdown("### 🎓 5. Classes taking the Exam")
+        if auto_detected:
+            st.sidebar.success("✨ Classes auto-detected from Time Table!")
+        else:
+            st.sidebar.info("💡 Enter Date & Session to auto-detect classes")
+            
+        selected_classes = st.sidebar.multiselect("Confirm Classes", available_classes, default=auto_detected)
     except Exception as e:
-        st.error(f"Could not parse student details: {e}")
+        st.sidebar.error(f"Could not parse student details: {e}")
 
-if st.button("Generate Seating Arrangement"):
+st.markdown("---")
+st.markdown("### 🚀 Final Step")
+if st.button("✨ Generate Seating Arrangement", use_container_width=True):
     if hall_file and student_files and timetable_file and exam_date and selected_classes:
         with st.spinner("Generating seating arrangement..."):
             try:
                 output_excel_bytes = process_allocation(hall_file, student_files, timetable_file, exam_date, exam_session, selected_classes, exam_title)
                 
-                st.success("✅ Seating Arrangement Generated Successfully!")
+                st.success("🎉 Seating Arrangement Generated Successfully!")
                 
                 st.download_button(
                     label="⬇️ Download Seating Arrangement",
                     data=output_excel_bytes,
                     file_name="Generated_Seating_Arrangement.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    type="primary"
                 )
             except Exception as e:
                 import traceback
                 st.error(f"❌ An error occurred during generation: {e}")
                 st.code(traceback.format_exc())
     else:
-        st.warning("⚠️ Please fill all fields and select at least one class to proceed.")
+        st.warning("⚠️ Please upload all files, fill Exam Date in the sidebar, and confirm at least one class.")
