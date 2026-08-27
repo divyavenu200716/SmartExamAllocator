@@ -6,28 +6,12 @@ from allocator import process_allocation, get_student_classes, get_active_classe
 
 st.set_page_config(page_title="SMART SEAT", page_icon="logo.png", layout="centered")
 
-# Custom CSS for colorful glowing text
-st.markdown("""
-    <style>
-    h1 {
-        background: -webkit-linear-gradient(45deg, #00d2ff, #3a7bd5);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 800;
-        font-size: 3rem !important;
-    }
-    h3 {
-        color: #00d2ff !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 st.title("🎓 SMART SEAT")
 st.markdown("### 🪑 Automated Seating Arrangement Generator")
 st.info("👈 Please use the sidebar on the left to upload your files and configure the exam settings.")
 
 # --- SIDEBAR ---
-st.sidebar.title("📁 Setup & Configuration")
+st.sidebar.title("📁 Configuration")
 
 with st.sidebar.expander("📂 1. Upload Hall Details (Excel/PDF)", expanded=False):
     hall_file = st.file_uploader("Select Hall File", type=['xlsx', 'xls', 'csv', 'pdf'], label_visibility="collapsed")
