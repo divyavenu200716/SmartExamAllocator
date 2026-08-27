@@ -6,14 +6,18 @@ from allocator import process_allocation, get_student_classes, get_active_classe
 
 st.set_page_config(page_title="SMART SEAT", page_icon="logo.png", layout="centered")
 
-# Hide Streamlit Watermark, Menu, and Footer
+# Hide Streamlit Watermark, Menu, Footer, and Creator Avatar
 hide_streamlit_style = """
 <style>
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
-a[href="https://streamlit.io/cloud"] {display: none !important;}
+a[href*="streamlit"] {display: none !important;}
 [data-testid="stHeader"] {display: none !important;}
+div[class^="viewerBadge"] {display: none !important;}
+div[class^="creator"] {display: none !important;}
+img[alt*="Creator"] {display: none !important;}
+[title*="Creator"] {display: none !important;}
 </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
