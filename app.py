@@ -13,15 +13,15 @@ st.info("👈 Please use the sidebar on the left to upload your files and config
 # --- SIDEBAR ---
 st.sidebar.title("📁 Configuration")
 
-with st.sidebar.expander("📂 1. Upload Hall Details (Excel/PDF)", expanded=False):
+with st.sidebar.expander("📂 1. Hall Details (Excel/PDF)", expanded=False):
     hall_file = st.file_uploader("Select Hall File", type=['xlsx', 'xls', 'csv', 'pdf'], label_visibility="collapsed")
     st.markdown("*(Excel: HALL NO, TOTAL SEAT, ROWS, COLUMNS)*")
 
-with st.sidebar.expander("📂 2. Upload Student Details (Excel/PDF)", expanded=False):
+with st.sidebar.expander("📂 2. Student Details (Excel/PDF)", expanded=False):
     student_files = st.file_uploader("Select Student Files", type=['xlsx', 'xls', 'csv', 'pdf'], accept_multiple_files=True, label_visibility="collapsed")
     st.markdown("*(Upload one or multiple files)*")
 
-with st.sidebar.expander("📂 3. Upload Time Table (Excel/PDF)", expanded=False):
+with st.sidebar.expander("📂 3. Time Table (Excel/PDF)", expanded=False):
     timetable_file = st.file_uploader("Select Time Table", type=['pdf', 'xlsx', 'xls', 'csv'], label_visibility="collapsed")
 
 st.sidebar.markdown("---")
