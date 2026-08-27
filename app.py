@@ -4,33 +4,28 @@ import io
 import os
 from allocator import process_allocation, get_student_classes, get_active_classes_from_timetable
 
-st.set_page_config(page_title="SMART SEAT", page_icon="logo.png", layout="wide")
+st.set_page_config(page_title="SMART SEAT", page_icon="logo.png", layout="centered")
 
 st.title("🎓 SMART SEAT")
+st.markdown("### 🪑 Automated Seating Arrangement Generator")
+st.info("👈 Please use the sidebar on the left to upload your files and configure the exam settings.")
 
-st.markdown("Upload your exam details below to automatically generate the seating arrangement.")
+# --- SIDEBAR ---
+st.sidebar.title("📁 Setup & Configuration")
 
-col1, col2, col3 = st.columns(3)
-with col1:
-    hall_file = st.file_uploader("1. Upload Hall Details (Excel or PDF)", type=['xlsx', 'xls', 'csv', 'pdf'])
-    with st.expander("💡 View Sample Format"):
-        st.markdown("For **Excel**, your table should look like this:")
-        st.table(pd.DataFrame({"HALL NO": ["101", "102"], "TOTAL SEAT": [30, 36], "ROWS": [5, 6], "COLUMNS": [6, 6]}))
-        st.markdown("For **PDF**, just ensure each line has: `HallNo TotalSeat Rows Cols` (e.g. `101 30 5 6`)")
+with st.sidebar.expander("📂 1. Upload Hall Details (Excel/PDF)", expanded=False):
+    hall_file = st.file_uploader("Select Hall File", type=['xlsx', 'xls', 'csv', 'pdf'], label_visibility="collapsed")
+    st.markdown("*(Excel: HALL NO, TOTAL SEAT, ROWS, COLUMNS)*")
 
-with col2:
-    student_files = st.file_uploader("2. Upload Student Details (Excel or PDF)", type=['xlsx', 'xls', 'csv', 'pdf'], accept_multiple_files=True)
-    with st.expander("💡 View Sample Format"):
-        st.markdown("Upload **one or more Excel/PDF files**.")
-        st.table(pd.DataFrame({"REG.NO": ["23UCA01", "23UCA02"], "NAME": ["Arun", "Bala"], "YEAR": ["I-YEAR", "I-YEAR"]}))
+with st.sidebar.expander("📂 2. Upload Student Details (Excel/PDF)", expanded=False):
+    student_files = st.file_uploader("Select Student Files", type=['xlsx', 'xls', 'csv', 'pdf'], accept_multiple_files=True, label_visibility="collapsed")
+    st.markdown("*(Upload one or multiple files)*")
 
-with col3:
-    timetable_file = st.file_uploader("3. Upload Time Table (PDF or Excel)", type=['pdf', 'xlsx', 'xls', 'csv'])
-    with st.expander("👀 View Sample Format"):
-        st.markdown("Just upload the standard University **PDF** or **Excel** Time Table directly!")
+with st.sidebar.expander("📂 3. Upload Time Table (Excel/PDF)", expanded=False):
+    timetable_file = st.file_uploader("Select Time Table", type=['pdf', 'xlsx', 'xls', 'csv'], label_visibility="collapsed")
 
+st.sidebar.markdown("---")
 st.sidebar.markdown("### ⚙️ 4. Exam Settings")
-st.sidebar.markdown("*(Required for auto-detection)*")
 exam_title = st.sidebar.text_input("Exam Title", value="PERIYAR UNIVERSITY THEORY EXAMINATIONS - APR/MAY")
 exam_date = st.sidebar.text_input("Exam Date (e.g., 28-04-2025)", value="")
 exam_session = st.sidebar.selectbox("Session", ["FN", "AN"])
@@ -66,6 +61,7 @@ if student_files:
     except Exception as e:
         st.sidebar.error(f"Could not parse student details: {e}")
 
+# --- MAIN PAGE ---
 st.markdown("---")
 st.markdown("### 🚀 Final Step")
 if st.button("✨ Generate Seating Arrangement", use_container_width=True):
