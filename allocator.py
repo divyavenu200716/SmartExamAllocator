@@ -34,15 +34,15 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
     def parse_line(line, recent_dept, recent_year):
         upper_line = line.upper()
         temp_dept = []
-        if 'COMPUTER SCIENCE' in upper_line or 'CS' in upper_line.split(): temp_dept.append('CS')
-        if 'ARTIFICIAL INTELLIGENCE' in upper_line or 'DATA SCIENCE' in upper_line or 'AI&DS' in upper_line or 'AIDS' in upper_line.split(): temp_dept.append('AIDS')
-        if 'COMMERCE' in upper_line or 'B.COM' in upper_line or 'BCOM' in upper_line.split(): temp_dept.append('BCOM')
+        if 'COMPUTER SCIENCE' in upper_line or ' CS ' in f" {upper_line} " or 'C.S' in upper_line: temp_dept.append('CS')
+        if 'ARTIFICIAL INTELLIGENCE' in upper_line or 'DATA SCIENCE' in upper_line or 'AI&DS' in upper_line or 'AI & DS' in upper_line or ' AIDS ' in f" {upper_line.replace('-',' ')} ": temp_dept.append('AIDS')
+        if 'COMMERCE' in upper_line or 'B.COM' in upper_line or 'B. COM' in upper_line or ' BCOM ' in f" {upper_line.replace('-',' ')} ": temp_dept.append('BCOM')
         if 'TAMIL' in upper_line: temp_dept.append('B A TAMIL')
-        if 'CHEMISTRY' in upper_line or 'CHE' in upper_line.split(): temp_dept.append('CHE')
-        if 'COMPUTER APPLICATIONS' in upper_line or 'BCA' in upper_line.split() or 'B.C.A' in upper_line: temp_dept.append('BCA')
-        if 'BBA' in upper_line.split() or 'B.B.A' in upper_line: temp_dept.append('BBA')
-        if 'MIB' in upper_line.split() or 'M.I.B' in upper_line: temp_dept.append('MIB')
-        if 'CCA' in upper_line.split() or 'C.C.A' in upper_line or 'CORPORATE' in upper_line: temp_dept.append('CCA')
+        if 'CHEMISTRY' in upper_line or ' CHE ' in f" {upper_line} ": temp_dept.append('CHE')
+        if 'COMPUTER APPLICATIONS' in upper_line or 'B.C.A' in upper_line or 'B. C. A' in upper_line or ' BCA ' in f" {upper_line.replace('-',' ')} ": temp_dept.append('BCA')
+        if 'B.B.A' in upper_line or 'B. B. A' in upper_line or 'BUSINESS ADMINISTRATION' in upper_line or ' BBA ' in f" {upper_line.replace('-',' ')} ": temp_dept.append('BBA')
+        if 'M.I.B' in upper_line or 'M. I. B' in upper_line or ' MIB ' in f" {upper_line.replace('-',' ')} ": temp_dept.append('MIB')
+        if 'C.C.A' in upper_line or 'C. C. A' in upper_line or 'CORPORATE' in upper_line or ' CCA ' in f" {upper_line.replace('-',' ')} ": temp_dept.append('CCA')
         
         if temp_dept:
             recent_dept = temp_dept

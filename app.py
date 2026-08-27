@@ -47,6 +47,8 @@ if student_files:
         auto_detected = []
         if timetable_file and exam_date and exam_session:
             detected = get_active_classes_from_timetable(timetable_file, exam_date, exam_session)
+            if not detected:
+                st.warning("⚠️ Auto-detection couldn't find any classes for this Date & Session. (Tips: Check if the date is typed correctly, or if your Timetable PDF is a scanned image which cannot be read automatically).")
             # Fuzzy match detected classes against available classes
             auto_set = set()
             for d in detected:
