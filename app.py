@@ -4,16 +4,14 @@ import io
 import os
 from allocator import process_allocation, get_student_classes, get_active_classes_from_timetable
 
-st.set_page_config(page_title="KASC SMART SEAT", page_icon="logo.png", layout="centered")
+st.set_page_config(page_title="KASC SMART SEAT", page_icon="logo.png", layout="centered", initial_sidebar_state="expanded")
 
 # Hide Streamlit Watermark and Add Custom Modern CSS
 custom_style = """
 <style>
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
-header {visibility: hidden;}
 a[href*="streamlit"] {display: none !important;}
-[data-testid="stHeader"] {display: none !important;}
 div[class^="viewerBadge"] {display: none !important;}
 div[class^="creator"] {display: none !important;}
 img[alt*="Creator"] {display: none !important;}
