@@ -6,8 +6,8 @@ from allocator import process_allocation, get_student_classes, get_active_classe
 
 st.set_page_config(page_title="KASC SMART SEAT", page_icon="logo.png", layout="centered")
 
-# Hide Streamlit Watermark, Menu, Footer, and Creator Avatar
-hide_streamlit_style = """
+# Hide Streamlit Watermark and Add Custom Modern CSS
+custom_style = """
 <style>
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
@@ -18,9 +18,60 @@ div[class^="viewerBadge"] {display: none !important;}
 div[class^="creator"] {display: none !important;}
 img[alt*="Creator"] {display: none !important;}
 [title*="Creator"] {display: none !important;}
+
+/* App background with a subtle blue-black gradient */
+.stApp {
+    background: linear-gradient(135deg, #050505 0%, #0a1128 50%, #050505 100%);
+}
+
+/* Clean text colors */
+h1, h2, h3, h4, h5, h6 {
+    color: #ffffff !important;
+}
+
+/* Sidebar with a deep blue-black tint */
+[data-testid="stSidebar"] {
+    background-color: #0b1320;
+    border-right: 1px solid #1c2e4a;
+}
+
+/* Stylish Primary Buttons */
+.stButton>button {
+    background: linear-gradient(45deg, #0072ff, #00c6ff);
+    color: white !important;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 198, 255, 0.4);
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+.stButton>button:hover {
+    box-shadow: 0 6px 20px rgba(0, 198, 255, 0.6);
+    transform: translateY(-2px);
+}
+
+/* Expander headers and uploaders */
+.stExpander, div[data-testid="stFileUploader"] {
+    background-color: #121f33;
+    border: 1px solid #1f3659;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+/* Download buttons and links */
+.stDownloadButton>button {
+    background: linear-gradient(45deg, #11998e, #38ef7d);
+    color: white !important;
+    border: none;
+    box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4);
+}
+.stDownloadButton>button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(56, 239, 125, 0.6);
+}
 </style>
 """
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+st.markdown(custom_style, unsafe_allow_html=True)
 
 col1, col2 = st.columns([1, 5])
 with col1:
@@ -32,6 +83,7 @@ with col2:
     st.title("🎓 KASC SMART SEAT")
 st.markdown("### 🪑 Automated Seating Arrangement Generator")
 st.info("👈 Please use the sidebar on the left to upload your files and configure the exam settings.")
+
 
 # --- SIDEBAR ---
 st.sidebar.title("📁 Configuration")
@@ -108,3 +160,7 @@ if st.button("✨ Generate Seating Arrangement", use_container_width=True):
                 st.code(traceback.format_exc())
     else:
         st.warning("⚠️ Please upload all files, fill Exam Date in the sidebar, and confirm at least one class.")
+
+
+st.markdown("---")
+st.markdown("<p style='text-align: center; color: #a0aec0; font-size: 0.9rem;'>💻 Developed by <b>Divyavenugopal (Final Year AI&DS)</b></p>", unsafe_allow_html=True)
