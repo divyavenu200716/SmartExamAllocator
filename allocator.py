@@ -267,7 +267,9 @@ def get_student_classes(student_files):
 
 def process_allocation(hall_file, student_files, timetable_file, exam_date, exam_session, selected_classes, exam_title):
     # 1. Read Hall Details
-    if hall_file.name.lower().endswith('.pdf'):
+    if isinstance(hall_file, pd.DataFrame):
+        df_halls = hall_file.copy()
+    elif hall_file.name.lower().endswith('.pdf'):
         import pypdf
         reader = pypdf.PdfReader(hall_file)
         halls = []

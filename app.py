@@ -86,9 +86,20 @@ st.info("👈 Please use the sidebar on the left to upload your files and config
 # --- SIDEBAR ---
 st.sidebar.title("📁 Configuration")
 
-with st.sidebar.expander("📂 1. Hall Details (Excel/PDF)", expanded=False):
-    hall_file = st.file_uploader("Select Hall File", type=['xlsx', 'xls', 'csv', 'pdf'], label_visibility="collapsed")
-    st.markdown("*(Excel: HALL NO, TOTAL SEAT, ROWS, COLUMNS)*")
+with st.sidebar.expander("🏗️ 1. Hall Details", expanded=False):
+    hall_mode = st.radio("Mode", ["Manual Entry", "File Upload"], horizontal=True, label_visibility="collapsed")
+    hall_file = None
+    
+    if "manual_halls" not in st.session_state:
+        st.session_state.manual_halls = pd.DataFrame([{"HALL NO": "H-101", "TOTAL SEAT": 30, "ROWS": 5, "COLUMNS": 6}])
+        
+    if hall_mode == "File Upload":
+        hall_file = st.file_uploader("Select Hall File", type=['xlsx', 'xls', 'csv', 'pdf'], label_visibility="collapsed")
+        st.markdown("*(Upload Excel/PDF containing Room & Capacity)*")
+    else:
+        st.markdown("*(Add your halls below)*")
+        edited_halls = st.data_editor(st.session_state.manual_halls, num_rows="dynamic", use_container_width=True)
+        hall_file = edited_halls
 
 with st.sidebar.expander("📂 2. Student Details (Excel/PDF)", expanded=False):
     student_files = st.file_uploader("Select Student Files", type=['xlsx', 'xls', 'csv', 'pdf'], accept_multiple_files=True, label_visibility="collapsed")
@@ -138,7 +149,8 @@ if student_files:
 st.markdown("---")
 st.markdown("### 🚀 Final Step")
 if st.button("✨ Generate Seating Arrangement", use_container_width=True):
-    if hall_file and student_files and timetable_file and exam_date and selected_classes:
+    has_halls = hall_file is not None and (not isinstance(hall_file, pd.DataFrame) or not hall_file.empty)
+    if has_halls and student_files and timetable_file and exam_date and selected_classes:
         with st.spinner("Generating seating arrangement..."):
             try:
                 output_excel_bytes = process_allocation(hall_file, student_files, timetable_file, exam_date, exam_session, selected_classes, exam_title)
