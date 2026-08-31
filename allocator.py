@@ -302,6 +302,31 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
         df_halls = pd.read_csv(hall_file)
     else:
         df_halls = pd.read_excel(hall_file)
+        
+    # Standardize column names for halls to be extremely flexible
+    df_halls.columns = df_halls.columns.astype(str).str.strip().str.upper()
+    col_mapping = {}
+    import re
+    for col in df_halls.columns:
+        if re.search(r'HALL|ROOM|CLASS', col):
+            if 'HALL NO' not in col_mapping.values():
+                col_mapping[col] = 'HALL NO'
+        elif re.search(r'TOTAL|CAPACITY|SEAT|COUNT', col):
+            if 'TOTAL SEAT' not in col_mapping.values():
+                col_mapping[col] = 'TOTAL SEAT'
+        elif re.search(r'ROW', col):
+            col_mapping[col] = 'ROWS'
+        elif re.search(r'COL', col):
+            col_mapping[col] = 'COLUMNS'
+            
+    df_halls.rename(columns=col_mapping, inplace=True)
+    
+    if 'HALL NO' not in df_halls.columns and len(df_halls.columns) > 0:
+        df_halls.rename(columns={df_halls.columns[0]: 'HALL NO'}, inplace=True)
+    
+    if 'TOTAL SEAT' not in df_halls.columns and len(df_halls.columns) > 1:
+        # Assume second column is total seats if not explicitly found
+        df_halls.rename(columns={df_halls.columns[1]: 'TOTAL SEAT'}, inplace=True)
 
     # 2. Read Student Details (read all sheets from all files)
     all_students = []
