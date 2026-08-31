@@ -504,14 +504,14 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
             grid_cols = int(hall_row['COLUMNS']) if has_cols else 6
             grid_rows = int(hall_row['ROWS']) if has_rows else 5
             
-            # If they provided TOTAL SEAT but no ROWS/COLUMNS, we calculate it:
-            if 'TOTAL SEAT' in hall_row and pd.notna(hall_row['TOTAL SEAT']) and not has_rows:
+            # Ensure total_seats and grid capacity are properly aligned
+            if 'TOTAL SEAT' in hall_row and pd.notna(hall_row['TOTAL SEAT']):
                 total_seats = int(hall_row['TOTAL SEAT'])
-                grid_rows = total_seats // grid_cols if total_seats % grid_cols == 0 else (total_seats // grid_cols) + 1
+                # If physical grid is smaller than requested total seats, expand the grid rows!
+                if total_seats > (grid_rows * grid_cols):
+                    grid_rows = total_seats // grid_cols if total_seats % grid_cols == 0 else (total_seats // grid_cols) + 1
             else:
-                total_seats = int(hall_row.get('TOTAL SEAT', grid_rows * grid_cols))
-                if pd.isna(total_seats):
-                    total_seats = grid_rows * grid_cols
+                total_seats = grid_rows * grid_cols
             
             max_cols = grid_cols * 2
             empty_middle = max_cols - 3
