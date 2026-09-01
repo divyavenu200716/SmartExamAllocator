@@ -324,9 +324,15 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
     if 'HALL NO' not in df_halls.columns and len(df_halls.columns) > 0:
         df_halls.rename(columns={df_halls.columns[0]: 'HALL NO'}, inplace=True)
     
-    if 'TOTAL SEAT' not in df_halls.columns and len(df_halls.columns) > 1:
-        # Assume second column is total seats if not explicitly found
-        df_halls.rename(columns={df_halls.columns[1]: 'TOTAL SEAT'}, inplace=True)
+    if 'TOTAL SEAT' not in df_halls.columns:
+        if len(df_halls.columns) > 1:
+            # Assume second column is total seats if not explicitly found
+            df_halls.rename(columns={df_halls.columns[1]: 'TOTAL SEAT'}, inplace=True)
+        elif len(df_halls.columns) == 1:
+            # If they only provided 1 column, assume it is TOTAL SEAT
+            df_halls['TOTAL SEAT'] = df_halls['HALL NO']
+            # And assign dummy hall numbers
+            df_halls['HALL NO'] = [f"H-{i+1}" for i in range(len(df_halls))]
 
     # 2. Read Student Details (read all sheets from all files)
     all_students = []
