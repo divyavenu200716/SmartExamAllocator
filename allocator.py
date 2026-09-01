@@ -540,17 +540,29 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                     
                 col_students = []
                 
+                # Identify departments used in the previous column to avoid side-by-side seating
+                prev_col_depts = set()
+                if v_col > 0 and len(hall_visual_columns) > 0:
+                    prev_col_depts = {s['DEPT'] for s in hall_visual_columns[-1]}
+                
                 # Keep filling this column until it has `grid_rows` students OR hall is full
                 while len(col_students) < grid_rows and hall_assigned < total_seats:
                     chosen_dept = None
                     
-                    # Try to find a different department with enough students
+                    # PRIORITY 1: Find a dept that is NOT in the previous column AND NOT the last_dept in this column
                     for d in depts:
-                        if d != last_dept and len(students_by_dept[d]) > 0:
+                        if d != last_dept and d not in prev_col_depts and len(students_by_dept[d]) > 0:
                             chosen_dept = d
                             break
+                            
+                    # PRIORITY 2: If we couldn't find one, just avoid last_dept (it might be in prev_col, but we have no choice)
+                    if chosen_dept is None:
+                        for d in depts:
+                            if d != last_dept and len(students_by_dept[d]) > 0:
+                                chosen_dept = d
+                                break
                     
-                    # Fallback: if we couldn't find a different one, just pick any with students
+                    # PRIORITY 3: If STILL none, just pick ANY dept that has students (last resort)
                     if chosen_dept is None:
                         for d in depts:
                             if len(students_by_dept[d]) > 0:
