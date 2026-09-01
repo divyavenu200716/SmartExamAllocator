@@ -501,15 +501,21 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
             has_rows = 'ROWS' in hall_row and pd.notna(hall_row.get('ROWS'))
             has_cols = 'COLUMNS' in hall_row and pd.notna(hall_row.get('COLUMNS'))
             
-            grid_cols = int(hall_row['COLUMNS']) if has_cols else 6
-            grid_rows = int(hall_row['ROWS']) if has_rows else 5
+            try:
+                grid_cols = int(float(hall_row['COLUMNS'])) if has_cols else 6
+                grid_rows = int(float(hall_row['ROWS'])) if has_rows else 5
+            except (ValueError, TypeError):
+                continue
             
             # Ensure total_seats and grid capacity are properly aligned
             if 'TOTAL SEAT' in hall_row and pd.notna(hall_row['TOTAL SEAT']):
-                total_seats = int(hall_row['TOTAL SEAT'])
-                # If physical grid is smaller than requested total seats, expand the grid rows!
-                if total_seats > (grid_rows * grid_cols):
-                    grid_rows = total_seats // grid_cols if total_seats % grid_cols == 0 else (total_seats // grid_cols) + 1
+                try:
+                    total_seats = int(float(hall_row['TOTAL SEAT']))
+                    # If physical grid is smaller than requested total seats, expand the grid rows!
+                    if total_seats > (grid_rows * grid_cols):
+                        grid_rows = total_seats // grid_cols if total_seats % grid_cols == 0 else (total_seats // grid_cols) + 1
+                except (ValueError, TypeError):
+                    continue # Skip invalid rows like headers
             else:
                 total_seats = grid_rows * grid_cols
             
