@@ -676,9 +676,9 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                                     y_strs = []
                                     for y_part in yr.split('/'):
                                         y_part = y_part.strip()
-                                        if y_part == 'I': y_strs.append('1-YEAR')
-                                        elif y_part == 'II': y_strs.append('2-YEAR')
-                                        elif y_part == 'III' or y_part == 'OG': y_strs.append('3-YEAR')
+                                        if y_part == 'I': y_strs.append('I-YEAR')
+                                        elif y_part == 'II': y_strs.append('II-YEAR')
+                                        elif y_part == 'III' or y_part == 'OG': y_strs.append('III-YEAR')
                                     
                                     dept_list = []
                                     import re
@@ -754,12 +754,22 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                 dept_name = parts[0]
                 roman = ""
                 if len(parts) > 1:
-                    if parts[1] == "1-YEAR": roman = "I"
-                    elif parts[1] == "2-YEAR": roman = "II"
-                    elif parts[1] == "3-YEAR": roman = "III"
+                    if parts[1] == "I-YEAR" or parts[1] == "1-YEAR": roman = "I"
+                    elif parts[1] == "II-YEAR" or parts[1] == "2-YEAR": roman = "II"
+                    elif parts[1] == "III-YEAR" or parts[1] == "3-YEAR": roman = "III"
                 
                 prefix = f"{roman}-{dept_name}" if roman else dept_name
-                subcode = dept_subcodes.get(d, "")
+                
+                # Robust lookup for subcode
+                subcode = ""
+                import re
+                d_clean = re.sub(r'[^A-Z0-9]', '', d.upper())
+                for k, sc in dept_subcodes.items():
+                    k_clean = re.sub(r'[^A-Z0-9]', '', k.upper())
+                    if d_clean == k_clean:
+                        subcode = sc
+                        break
+                        
                 if subcode:
                     dept_parts.append(f"{prefix} - {count} ({subcode})")
                 else:
