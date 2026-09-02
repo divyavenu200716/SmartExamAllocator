@@ -545,6 +545,135 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
     # reader = pypdf.PdfReader(timetable_file)
     # text = reader.pages[0].extract_text()
     
+    # --- Extract subcodes from PDF or Excel ---
+    dept_subcodes = {}
+    if timetable_file:
+        try:
+            # Standardise user input exam_date
+            try:
+                exam_date_std = pd.to_datetime(exam_date, dayfirst=True).strftime('%d-%m-%Y')
+            except:
+                exam_date_std = exam_date
+                
+            if hasattr(timetable_file, 'seek'):
+                timetable_file.seek(0)
+                
+            filename = timetable_file.name.lower() if hasattr(timetable_file, 'name') else ""
+            if filename.endswith('.xlsx') or filename.endswith('.xls'):
+                df_tt = pd.read_excel(timetable_file, header=None)
+                header_idx = -1
+                for idx, row_tt in df_tt.iterrows():
+                    row_str = ' '.join([str(x).upper() for x in row_tt.values])
+                    if 'DATE' in row_str and 'SESSION' in row_str and 'DEPARTMENT' in row_str:
+                        header_idx = idx
+                        break
+                        
+                if header_idx != -1:
+                    df_tt.columns = df_tt.iloc[header_idx]
+                    df_tt = df_tt[header_idx+1:]
+                    
+                    c_date = ''
+                    c_sess = ''
+                    
+                    for idx, row_tt in df_tt.iterrows():
+                        d = row_tt.get('Date', '')
+                        if pd.notnull(d) and str(d).strip() != '':
+                            try:
+                                c_date = pd.to_datetime(d, dayfirst=True).strftime('%d-%m-%Y')
+                            except:
+                                c_date = str(d).strip()
+                            
+                        s = str(row_tt.get('Session', '')).strip()
+                        if s != 'nan' and s != '': c_sess = s
+                            
+                        if c_date == exam_date_std and c_sess.strip().upper() == exam_session.strip().upper():
+                            yr = str(row_tt.get('Year', '')).strip().upper()
+                            dpt = str(row_tt.get('Department', '')).strip().upper()
+                            sc = str(row_tt.get('Paper Code', '')).strip()
+                            
+                            y_strs = []
+                            for y_part in yr.split('/'):
+                                y_part = y_part.strip()
+                                if y_part == 'I': y_strs.append('I-YEAR')
+                                elif y_part == 'II': y_strs.append('II-YEAR')
+                                elif y_part == 'III' or y_part == 'OG': y_strs.append('III-YEAR')
+                            
+                            dept_list = []
+                            import re
+                            clean_dpt = re.sub(r'[^A-Z]', '', dpt)
+                            if 'ALL' in dpt:
+                                dept_list = ['CS', 'AI&DS', 'B.COM', 'B A TAMIL', 'CHE', 'BCA', 'BBA', 'MIB']
+                            else:
+                                dpt_parts = [x.strip() for x in dpt.split(',')]
+                                if 'CS' in clean_dpt or 'COMPUTERSCIENCE' in clean_dpt: dept_list.append('CS')
+                                if 'AIDS' in clean_dpt or 'ARTIFICIALINTELLIGENCE' in clean_dpt: dept_list.append('AI&DS')
+                                if 'BCOM' in clean_dpt or 'COMMERCE' in clean_dpt or 'COM' in clean_dpt: dept_list.append('B.COM')
+                                if 'TAM' in clean_dpt or 'TA' in clean_dpt or 'T' in dpt_parts: dept_list.append('B A TAMIL')
+                                if 'CHE' in clean_dpt or 'CH' in dpt_parts or 'CHEMISTRY' in clean_dpt: dept_list.append('CHE')
+                                if 'BCA' in clean_dpt: dept_list.append('BCA')
+                                if 'BBA' in clean_dpt: dept_list.append('BBA')
+                                if 'MIB' in clean_dpt: dept_list.append('MIB')
+                            
+                            for dept_name in dept_list:
+                                for y_str in y_strs:
+                                    key = f'{dept_name} - {y_str}'
+                                    if key not in dept_subcodes or 'TA' in sc:
+                                        dept_subcodes[key] = sc
+            else:
+                reader = pypdf.PdfReader(timetable_file)
+                search_str = (exam_date + exam_session).upper().replace(' ', '')
+                current_degree = ''
+                current_sem = -1
+                for page in reader.pages:
+                    text = page.extract_text()
+                    if not text: continue
+                    for line in text.split('\n'):
+                        if line.startswith('DEGREE NAME:'):
+                            current_degree = line.split('DEGREE NAME:')[1].strip().upper()
+                        elif 'SEMESTER :' in line:
+                            sem_str = line.split('SEMESTER')[0].strip()
+                            if sem_str.isdigit():
+                                current_sem = int(sem_str)
+                        
+                        if search_str in line.replace(' ', '').upper():
+                            sub_code = line.split(' ')[0].strip()
+                            year = ''
+                            if current_sem in [1, 2]: year = '1-YEAR'
+                            elif current_sem in [3, 4]: year = '2-YEAR'
+                            elif current_sem in [5, 6]: year = '3-YEAR'
+                            
+                            sheets = []
+                            if 'COMPUTER SCIENCE' in current_degree or 'CS' in current_degree: sheets.append('CS')
+                            if 'ARTIFICIAL INTELLIGENCE' in current_degree or 'DATA SCIENCE' in current_degree or 'AI&DS' in current_degree: sheets.append('AI&DS')
+                            if 'COMMERCE' in current_degree or 'B.COM' in current_degree: sheets.append('B.COM')
+                            if 'TAMIL' in current_degree: sheets.append('B A TAMIL')
+                            if 'CHEMISTRY' in current_degree or 'CHE' in current_degree: sheets.append('CHE')
+                            if 'COMPUTER APPLICATIONS' in current_degree or 'BCA' in current_degree: sheets.append('BCA')
+                            if 'FOUNDATION' in current_degree:
+                                sheets = ['CS', 'AI&DS', 'B.COM', 'B A TAMIL', 'CHE', 'BCA', 'BBA', 'MIB', 'Sheet3']
+                                
+                            for s_name in sheets:
+                                key = f'{s_name} - {year}'
+                                if key not in dept_subcodes or 'TA' in sub_code: 
+                                    dept_subcodes[key] = sub_code
+        except:
+            pass
+    # ---------------------------------
+    
+    # Append SUBCODE to students based on DEPT
+    for s in all_students:
+        import re
+        d_clean = re.sub(r"[^A-Z0-9]", "", s['DEPT'].upper())
+        d_clean = d_clean.replace("IIIYEAR", "3YEAR").replace("IIYEAR", "2YEAR").replace("IYEAR", "1YEAR")
+        sub = ""
+        for k, sc in dept_subcodes.items():
+            k_clean = re.sub(r"[^A-Z0-9]", "", k.upper())
+            k_clean = k_clean.replace("IIIYEAR", "3YEAR").replace("IIYEAR", "2YEAR").replace("IYEAR", "1YEAR")
+            if d_clean == k_clean:
+                sub = sc
+                break
+        s['SUBCODE'] = sub
+
     # 4. Allocation Logic
     # Group students by Department
     students_by_dept = {}
@@ -595,6 +724,7 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
             hall_visual_columns = []
             
             last_dept = None
+            last_subcode = None
             hall_assigned = 0
             
             for v_col in range(grid_cols):
@@ -604,24 +734,39 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                 col_students = []
                 
                 # Identify departments used in the previous column to avoid side-by-side seating
-                prev_col_depts = set()
+                prev_col_entities = []
                 if v_col > 0 and len(hall_visual_columns) > 0:
-                    prev_col_depts = {s['DEPT'] for s in hall_visual_columns[-1]}
+                    prev_col_entities = [(s['DEPT'], s.get('SUBCODE', '')) for s in hall_visual_columns[-1]]
                 
+                def is_conflict(cand_d, cand_s, other_d, other_s):
+                    if cand_d == other_d: return True
+                    if cand_s and other_s and cand_s == other_s: return True
+                    return False
+
                 # Keep filling this column until it has `grid_rows` students OR hall is full
                 while len(col_students) < grid_rows and hall_assigned < total_seats:
                     chosen_dept = None
                     
-                    # PRIORITY 1: Find a dept that is NOT in the previous column AND NOT the last_dept in this column
+                    # PRIORITY 1: Find a dept that has NO conflict with last_seated AND NO conflict with prev_col
                     for d in depts:
-                        if d != last_dept and d not in prev_col_depts and len(students_by_dept[d]) > 0:
+                        if len(students_by_dept[d]) == 0: continue
+                        cand_sub = students_by_dept[d][0].get('SUBCODE', '')
+                        
+                        conflict_last = last_dept is not None and is_conflict(d, cand_sub, last_dept, last_subcode)
+                        conflict_prev = any(is_conflict(d, cand_sub, pd, ps) for pd, ps in prev_col_entities)
+                        
+                        if not conflict_last and not conflict_prev:
                             chosen_dept = d
                             break
                             
-                    # PRIORITY 2: If we couldn't find one, just avoid last_dept (it might be in prev_col, but we have no choice)
+                    # PRIORITY 2: If we couldn't find one, just avoid last_dept conflict
                     if chosen_dept is None:
                         for d in depts:
-                            if d != last_dept and len(students_by_dept[d]) > 0:
+                            if len(students_by_dept[d]) == 0: continue
+                            cand_sub = students_by_dept[d][0].get('SUBCODE', '')
+                            
+                            conflict_last = last_dept is not None and is_conflict(d, cand_sub, last_dept, last_subcode)
+                            if not conflict_last:
                                 chosen_dept = d
                                 break
                     
@@ -642,11 +787,13 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                     
                     # Add them to the column
                     col_students.extend(students_by_dept[chosen_dept][:take_count])
+                    
+                    # Update last_dept and last_subcode so we don't pick the same one consecutively
+                    last_dept = chosen_dept
+                    last_subcode = students_by_dept[chosen_dept][0].get('SUBCODE', '')
+                    
                     students_by_dept[chosen_dept] = students_by_dept[chosen_dept][take_count:]
                     hall_assigned += take_count
-                    
-                    # Update last_dept so we don't pick the same one consecutively (unless fallback)
-                    last_dept = chosen_dept
                 
                 if col_students:
                     hall_visual_columns.append(col_students)
@@ -664,120 +811,7 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
             # Calculate actual assigned total and department counts
             total_assigned = sum(len(c) for c in hall_visual_columns)
             
-            # --- Extract subcodes from PDF or Excel ---
-            dept_subcodes = {}
-            if timetable_file:
-                try:
-                    # Standardise user input exam_date
-                    try:
-                        exam_date_std = pd.to_datetime(exam_date, dayfirst=True).strftime('%d-%m-%Y')
-                    except:
-                        exam_date_std = exam_date
-                        
-                    if hasattr(timetable_file, 'seek'):
-                        timetable_file.seek(0)
-                        
-                    filename = timetable_file.name.lower() if hasattr(timetable_file, 'name') else ""
-                    if filename.endswith('.xlsx') or filename.endswith('.xls'):
-                        df_tt = pd.read_excel(timetable_file, header=None)
-                        header_idx = -1
-                        for idx, row_tt in df_tt.iterrows():
-                            row_str = ' '.join([str(x).upper() for x in row_tt.values])
-                            if 'DATE' in row_str and 'SESSION' in row_str and 'DEPARTMENT' in row_str:
-                                header_idx = idx
-                                break
-                                
-                        if header_idx != -1:
-                            df_tt.columns = df_tt.iloc[header_idx]
-                            df_tt = df_tt[header_idx+1:]
-                            
-                            c_date = ''
-                            c_sess = ''
-                            
-                            for idx, row_tt in df_tt.iterrows():
-                                d = row_tt.get('Date', '')
-                                if pd.notnull(d) and str(d).strip() != '':
-                                    try:
-                                        c_date = pd.to_datetime(d, dayfirst=True).strftime('%d-%m-%Y')
-                                    except:
-                                        c_date = str(d).strip()
-                                    
-                                s = str(row_tt.get('Session', '')).strip()
-                                if s != 'nan' and s != '': c_sess = s
-                                    
-                                if c_date == exam_date_std and c_sess.strip().upper() == exam_session.strip().upper():
-                                    yr = str(row_tt.get('Year', '')).strip().upper()
-                                    dpt = str(row_tt.get('Department', '')).strip().upper()
-                                    sc = str(row_tt.get('Paper Code', '')).strip()
-                                    
-                                    y_strs = []
-                                    for y_part in yr.split('/'):
-                                        y_part = y_part.strip()
-                                        if y_part == 'I': y_strs.append('I-YEAR')
-                                        elif y_part == 'II': y_strs.append('II-YEAR')
-                                        elif y_part == 'III' or y_part == 'OG': y_strs.append('III-YEAR')
-                                    
-                                    dept_list = []
-                                    import re
-                                    clean_dpt = re.sub(r'[^A-Z]', '', dpt)
-                                    if 'ALL' in dpt:
-                                        dept_list = ['CS', 'AI&DS', 'B.COM', 'B A TAMIL', 'CHE', 'BCA', 'BBA', 'MIB']
-                                    else:
-                                        dpt_parts = [x.strip() for x in dpt.split(',')]
-                                        if 'CS' in clean_dpt or 'COMPUTERSCIENCE' in clean_dpt: dept_list.append('CS')
-                                        if 'AIDS' in clean_dpt or 'ARTIFICIALINTELLIGENCE' in clean_dpt: dept_list.append('AI&DS')
-                                        if 'BCOM' in clean_dpt or 'COMMERCE' in clean_dpt or 'COM' in clean_dpt: dept_list.append('B.COM')
-                                        if 'TAM' in clean_dpt or 'TA' in clean_dpt or 'T' in dpt_parts: dept_list.append('B A TAMIL')
-                                        if 'CHE' in clean_dpt or 'CH' in dpt_parts or 'CHEMISTRY' in clean_dpt: dept_list.append('CHE')
-                                        if 'BCA' in clean_dpt: dept_list.append('BCA')
-                                        if 'BBA' in clean_dpt: dept_list.append('BBA')
-                                        if 'MIB' in clean_dpt: dept_list.append('MIB')
-                                    
-                                    for dept_name in dept_list:
-                                        for y_str in y_strs:
-                                            key = f'{dept_name} - {y_str}'
-                                            if key not in dept_subcodes or 'TA' in sc:
-                                                dept_subcodes[key] = sc
-                    else:
-                        reader = pypdf.PdfReader(timetable_file)
-                        search_str = (exam_date + exam_session).upper().replace(' ', '')
-                        current_degree = ''
-                        current_sem = -1
-                        for page in reader.pages:
-                            text = page.extract_text()
-                            if not text: continue
-                            for line in text.split('\n'):
-                                if line.startswith('DEGREE NAME:'):
-                                    current_degree = line.split('DEGREE NAME:')[1].strip().upper()
-                                elif 'SEMESTER :' in line:
-                                    sem_str = line.split('SEMESTER')[0].strip()
-                                    if sem_str.isdigit():
-                                        current_sem = int(sem_str)
-                                
-                                if search_str in line.replace(' ', '').upper():
-                                    sub_code = line.split(' ')[0].strip()
-                                    year = ''
-                                    if current_sem in [1, 2]: year = '1-YEAR'
-                                    elif current_sem in [3, 4]: year = '2-YEAR'
-                                    elif current_sem in [5, 6]: year = '3-YEAR'
-                                    
-                                    sheets = []
-                                    if 'COMPUTER SCIENCE' in current_degree or 'CS' in current_degree: sheets.append('CS')
-                                    if 'ARTIFICIAL INTELLIGENCE' in current_degree or 'DATA SCIENCE' in current_degree or 'AI&DS' in current_degree: sheets.append('AI&DS')
-                                    if 'COMMERCE' in current_degree or 'B.COM' in current_degree: sheets.append('B.COM')
-                                    if 'TAMIL' in current_degree: sheets.append('B A TAMIL')
-                                    if 'CHEMISTRY' in current_degree or 'CHE' in current_degree: sheets.append('CHE')
-                                    if 'COMPUTER APPLICATIONS' in current_degree or 'BCA' in current_degree: sheets.append('BCA')
-                                    if 'FOUNDATION' in current_degree:
-                                        sheets = ['CS', 'AI&DS', 'B.COM', 'B A TAMIL', 'CHE', 'BCA', 'BBA', 'MIB', 'Sheet3']
-                                        
-                                    for s_name in sheets:
-                                        key = f'{s_name} - {year}'
-                                        if key not in dept_subcodes or 'TA' in sub_code: 
-                                            dept_subcodes[key] = sub_code
-                except:
-                    pass
-            # ---------------------------------
+
             
             dept_counts = {}
             for col_students in hall_visual_columns:
