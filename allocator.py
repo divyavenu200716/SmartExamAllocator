@@ -668,14 +668,17 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                                 s = str(row_tt.get('Session', '')).strip()
                                 if s != 'nan' and s != '': c_sess = s
                                     
-                                if c_date == exam_date_std and c_sess == exam_session:
+                                if c_date == exam_date_std and c_sess.strip().upper() == exam_session.strip().upper():
                                     yr = str(row_tt.get('Year', '')).strip().upper()
                                     dpt = str(row_tt.get('Department', '')).strip().upper()
                                     sc = str(row_tt.get('Paper Code', '')).strip()
-                                    y_str = ''
-                                    if yr == 'I': y_str = '1-YEAR'
-                                    elif yr == 'II': y_str = '2-YEAR'
-                                    elif yr == 'III' or yr == 'OG': y_str = '3-YEAR'
+                                    
+                                    y_strs = []
+                                    for y_part in yr.split('/'):
+                                        y_part = y_part.strip()
+                                        if y_part == 'I': y_strs.append('1-YEAR')
+                                        elif y_part == 'II': y_strs.append('2-YEAR')
+                                        elif y_part == 'III' or y_part == 'OG': y_strs.append('3-YEAR')
                                     
                                     dept_list = []
                                     import re
@@ -694,7 +697,7 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                                         if 'MIB' in clean_dpt: dept_list.append('MIB')
                                     
                                     for dept_name in dept_list:
-                                        if y_str:
+                                        for y_str in y_strs:
                                             key = f'{dept_name} - {y_str}'
                                             if key not in dept_subcodes or 'TA' in sc:
                                                 dept_subcodes[key] = sc
