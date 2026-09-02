@@ -801,8 +801,10 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                 subcode = ""
                 import re
                 d_clean = re.sub(r'[^A-Z0-9]', '', d.upper())
+                d_clean = d_clean.replace('IIIYEAR', '3YEAR').replace('IIYEAR', '2YEAR').replace('IYEAR', '1YEAR')
                 for k, sc in dept_subcodes.items():
                     k_clean = re.sub(r'[^A-Z0-9]', '', k.upper())
+                    k_clean = k_clean.replace('IIIYEAR', '3YEAR').replace('IIYEAR', '2YEAR').replace('IYEAR', '1YEAR')
                     if d_clean == k_clean:
                         subcode = sc
                         break
