@@ -119,8 +119,11 @@ if student_files:
             import re
             for d in detected:
                 d_clean = re.sub(r'[^A-Z0-9]', '', d.upper())
+                # Normalize year representations
+                d_clean = d_clean.replace('IIIYEAR', '3YEAR').replace('IIYEAR', '2YEAR').replace('IYEAR', '1YEAR')
                 for a in available_classes:
                     a_clean = re.sub(r'[^A-Z0-9]', '', a.upper())
+                    a_clean = a_clean.replace('IIIYEAR', '3YEAR').replace('IIYEAR', '2YEAR').replace('IYEAR', '1YEAR')
                     if d_clean == a_clean or d_clean in a_clean or a_clean in d_clean:
                         auto_set.add(a)
             auto_detected = list(auto_set)
