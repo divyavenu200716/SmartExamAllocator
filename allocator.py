@@ -33,32 +33,47 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
     # Generic Tracker Logic
     def parse_line(line, recent_dept, recent_year):
         upper_line = line.upper()
+        
+        # Create a heavily cleaned version for department matching (no commas, dots, slashes)
+        # We pad it with spaces to ensure word boundaries match
+        clean_for_match = f" {upper_line.replace(',', ' ').replace('.', ' ').replace('-', ' ')} "
+        
         temp_dept = []
-        if 'COMPUTER SCIENCE' in upper_line or ' CS ' in f" {upper_line} " or 'C.S' in upper_line: temp_dept.append('CS')
-        if 'ARTIFICIAL INTELLIGENCE' in upper_line or 'DATA SCIENCE' in upper_line or 'AI&DS' in upper_line or 'AI & DS' in upper_line or ' AIDS ' in f" {upper_line.replace('-',' ')} ": temp_dept.append('AIDS')
-        if 'COMMERCE' in upper_line or 'B.COM' in upper_line or 'B. COM' in upper_line or ' BCOM ' in f" {upper_line.replace('-',' ')} ": temp_dept.append('BCOM')
-        if 'TAMIL' in upper_line: temp_dept.append('B A TAMIL')
-        if 'CHEMISTRY' in upper_line or ' CHE ' in f" {upper_line} ": temp_dept.append('CHE')
-        if 'COMPUTER APPLICATIONS' in upper_line or 'B.C.A' in upper_line or 'B. C. A' in upper_line or ' BCA ' in f" {upper_line.replace('-',' ')} ": temp_dept.append('BCA')
-        if 'B.B.A' in upper_line or 'B. B. A' in upper_line or 'BUSINESS ADMINISTRATION' in upper_line or ' BBA ' in f" {upper_line.replace('-',' ')} ": temp_dept.append('BBA')
-        if 'M.I.B' in upper_line or 'M. I. B' in upper_line or ' MIB ' in f" {upper_line.replace('-',' ')} ": temp_dept.append('MIB')
-        if 'C.C.A' in upper_line or 'C. C. A' in upper_line or 'CORPORATE' in upper_line or ' CCA ' in f" {upper_line.replace('-',' ')} ": temp_dept.append('CCA')
+        if 'COMPUTER SCIENCE' in upper_line or ' CS ' in clean_for_match: temp_dept.append('CS')
+        if 'ARTIFICIAL INTELLIGENCE' in upper_line or 'DATA SCIENCE' in upper_line or 'AI&DS' in upper_line or 'AI DS' in clean_for_match or ' AIDS ' in clean_for_match: temp_dept.append('AIDS')
+        if 'COMMERCE' in upper_line or ' BCOM ' in clean_for_match or ' COM ' in clean_for_match: temp_dept.append('BCOM')
+        if 'TAMIL' in upper_line or ' T ' in clean_for_match or ' TA ' in clean_for_match: temp_dept.append('B A TAMIL')
+        if 'CHEMISTRY' in upper_line or ' CHE ' in clean_for_match or ' CH ' in clean_for_match: temp_dept.append('CHE')
+        if 'COMPUTER APPLICATIONS' in upper_line or ' BCA ' in clean_for_match: temp_dept.append('BCA')
+        if 'BUSINESS ADMINISTRATION' in upper_line or ' BBA ' in clean_for_match: temp_dept.append('BBA')
+        if ' MIB ' in clean_for_match: temp_dept.append('MIB')
+        if 'CORPORATE' in upper_line or ' CCA ' in clean_for_match: temp_dept.append('CCA')
         
         if temp_dept:
             recent_dept = temp_dept
             
-        yr = extract_year_from_text(upper_line)
-        # Also check semester digits if year not found
-        if not yr and 'SEMESTER' in upper_line:
-            match = re.search(r'SEMESTER\s*[:\-]?\s*(I{1,3}|IV|V|VI|[1-6])', upper_line)
-            if match:
-                sem_str = match.group(1)
-                if sem_str in ['1', '2', 'I', 'II']: yr = 'I-YEAR'
-                elif sem_str in ['3', '4', 'III', 'IV']: yr = 'II-YEAR'
-                elif sem_str in ['5', '6', 'V', 'VI']: yr = 'III-YEAR'
+        yrs = []
+        clean_upper = upper_line.replace(' ', '')
+        if 'I/II/III' in clean_upper:
+            yrs = ['I-YEAR', 'II-YEAR', 'III-YEAR']
+        elif 'I/II' in clean_upper:
+            yrs = ['I-YEAR', 'II-YEAR']
+        elif 'II/III' in clean_upper:
+            yrs = ['II-YEAR', 'III-YEAR']
+        else:
+            yr = extract_year_from_text(upper_line)
+            if not yr and 'SEMESTER' in upper_line:
+                match = re.search(r'SEMESTER\s*[:\-]?\s*(I{1,3}|IV|V|VI|[1-6])', upper_line)
+                if match:
+                    sem_str = match.group(1)
+                    if sem_str in ['1', '2', 'I', 'II']: yr = 'I-YEAR'
+                    elif sem_str in ['3', '4', 'III', 'IV']: yr = 'II-YEAR'
+                    elif sem_str in ['5', '6', 'V', 'VI']: yr = 'III-YEAR'
+            if yr:
+                yrs = [yr]
                 
-        if yr:
-            recent_year = yr
+        if yrs:
+            recent_year = yrs
             
         clean_line = re.sub(r'[\s\-/\.]', '', upper_line)
         
@@ -77,16 +92,15 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
 
         if date_matched and session_matched:
             matched_depts = temp_dept if temp_dept else recent_dept
-            matched_year = yr if yr else recent_year
+            matched_years = yrs if yrs else (recent_year if isinstance(recent_year, list) else [recent_year] if recent_year else [])
             
             if 'FOUNDATION' in upper_line or 'ALL' in upper_line.split():
                 matched_depts = ['CS', 'AIDS', 'BCOM', 'B A TAMIL', 'CHE', 'BCA', 'BBA', 'MIB', 'CCA']
                 
-            for s in matched_depts:
-                if matched_year:
-                    active_classes.add(f'{s} - {matched_year}')
-                else:
-                    active_classes.add(s)
+            for d in matched_depts:
+                for y in matched_years:
+                    if y:
+                        active_classes.add(f"{d} - {y}")
                     
         return recent_dept, recent_year
 
