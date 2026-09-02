@@ -589,7 +589,11 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                         if c_date == exam_date_std and c_sess.strip().upper() == exam_session.strip().upper():
                             yr = str(row_tt.get('Year', '')).strip().upper()
                             dpt = str(row_tt.get('Department', '')).strip().upper()
-                            sc = str(row_tt.get('Paper Code', '')).strip()
+                            sc = ''
+                            for col_name in df_tt.columns:
+                                if isinstance(col_name, str) and ('CODE' in col_name.upper() or 'SUB' in col_name.upper() or 'PAPER' in col_name.upper()):
+                                    sc = str(row_tt.get(col_name, '')).strip()
+                                    break
                             
                             y_strs = []
                             for y_part in yr.split('/'):
@@ -739,7 +743,9 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                     prev_col_entities = [(s['DEPT'], s.get('SUBCODE', '')) for s in hall_visual_columns[-1]]
                 
                 def is_conflict(cand_d, cand_s, other_d, other_s):
-                    if cand_d == other_d: return True
+                    # Conflict if same base department (e.g. BCOM == BCOM) even across different years
+                    if cand_d.split(' - ')[0].strip() == other_d.split(' - ')[0].strip(): return True
+                    # Conflict if same exact subcode
                     if cand_s and other_s and cand_s == other_s: return True
                     return False
 
