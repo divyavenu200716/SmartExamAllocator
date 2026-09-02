@@ -116,10 +116,11 @@ if student_files:
                 st.sidebar.warning("⚠️ Auto-detection couldn't find classes.")
             # Fuzzy match detected classes against available classes
             auto_set = set()
+            import re
             for d in detected:
-                d_clean = d.replace(' ', '').upper()
+                d_clean = re.sub(r'[^A-Z0-9]', '', d.upper())
                 for a in available_classes:
-                    a_clean = a.replace(' ', '').upper()
+                    a_clean = re.sub(r'[^A-Z0-9]', '', a.upper())
                     if d_clean == a_clean or d_clean in a_clean or a_clean in d_clean:
                         auto_set.add(a)
             auto_detected = list(auto_set)
@@ -130,7 +131,9 @@ if student_files:
             else:
                 st.info("💡 Enter Date & Session to auto-detect classes")
                 
-            selected_classes = st.multiselect("Confirm Classes", available_classes, default=auto_detected, label_visibility="collapsed")
+            # Use a dynamic key so the multiselect actually re-renders with the new default when auto_detected changes
+            ms_key = f"classes_ms_{exam_date}_{exam_session}_{len(auto_detected)}"
+            selected_classes = st.multiselect("Confirm Classes", available_classes, default=auto_detected, label_visibility="collapsed", key=ms_key)
     except Exception as e:
         st.sidebar.error(f"Could not parse student details: {e}")
 

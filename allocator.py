@@ -94,9 +94,35 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
         df = pd.read_excel(timetable_file, header=None)
         recent_dept = []
         recent_year = ''
+        
+        current_date_str = ''
+        current_session = ''
+        
+        import re
         for idx, row in df.iterrows():
-            row_str = ' '.join([str(x) for x in row.values if pd.notna(x)])
-            recent_dept, recent_year = parse_line(row_str, recent_dept, recent_year)
+            row_vals = []
+            for val in row.values:
+                if pd.isna(val):
+                    continue
+                sval = str(val).strip().upper()
+                # Check for Date
+                if re.search(r'\d{2}-\d{2}-\d{4}', sval) or re.search(r'\d{4}-\d{2}-\d{2}', sval):
+                    current_date_str = sval
+                elif isinstance(val, pd.Timestamp):
+                    current_date_str = val.strftime('%d-%m-%Y')
+                # Check for Session
+                if sval in ['FN', 'AN', 'FORENOON', 'AFTERNOON']:
+                    if sval == 'FORENOON': current_session = 'FN'
+                    elif sval == 'AFTERNOON': current_session = 'AN'
+                    else: current_session = sval
+                
+                row_vals.append(str(val))
+            
+            row_str = ' '.join(row_vals)
+            # Inject current date and session to make it visible to parse_line
+            full_row_str = f"{row_str} {current_date_str} {current_session}"
+            
+            recent_dept, recent_year = parse_line(full_row_str, recent_dept, recent_year)
     else:
         import pypdf
         reader = pypdf.PdfReader(timetable_file)
@@ -652,12 +678,20 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                                     elif yr == 'III' or yr == 'OG': y_str = '3-YEAR'
                                     
                                     dept_list = []
+                                    import re
+                                    clean_dpt = re.sub(r'[^A-Z]', '', dpt)
                                     if 'ALL' in dpt:
                                         dept_list = ['CS', 'AI&DS', 'B.COM', 'B A TAMIL', 'CHE', 'BCA', 'BBA', 'MIB']
                                     else:
-                                        for dept_name in ['CS', 'AI&DS', 'B.COM', 'B A TAMIL', 'CHE', 'BCA', 'BBA', 'MIB']:
-                                            if dept_name.replace('.', '') in dpt.replace('.', ''):
-                                                dept_list.append(dept_name)
+                                        dpt_parts = [x.strip() for x in dpt.split(',')]
+                                        if 'CS' in clean_dpt or 'COMPUTERSCIENCE' in clean_dpt: dept_list.append('CS')
+                                        if 'AIDS' in clean_dpt or 'ARTIFICIALINTELLIGENCE' in clean_dpt: dept_list.append('AI&DS')
+                                        if 'BCOM' in clean_dpt or 'COMMERCE' in clean_dpt or 'COM' in clean_dpt: dept_list.append('B.COM')
+                                        if 'TAM' in clean_dpt or 'TA' in clean_dpt or 'T' in dpt_parts: dept_list.append('B A TAMIL')
+                                        if 'CHE' in clean_dpt or 'CH' in dpt_parts or 'CHEMISTRY' in clean_dpt: dept_list.append('CHE')
+                                        if 'BCA' in clean_dpt: dept_list.append('BCA')
+                                        if 'BBA' in clean_dpt: dept_list.append('BBA')
+                                        if 'MIB' in clean_dpt: dept_list.append('MIB')
                                     
                                     for dept_name in dept_list:
                                         if y_str:
