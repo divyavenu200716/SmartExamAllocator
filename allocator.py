@@ -48,18 +48,29 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
         if 'BUSINESS ADMINISTRATION' in upper_line or ' BBA ' in clean_for_match: temp_dept.append('BBA')
         if ' MIB ' in clean_for_match: temp_dept.append('MIB')
         if 'CORPORATE' in upper_line or ' CCA ' in clean_for_match: temp_dept.append('CCA')
+        if 'BCOM CA' in upper_line or 'B.COM CA' in upper_line or 'BOM CA' in upper_line or ' BCOM CA ' in clean_for_match: temp_dept.append('BCOM CA')
         
         if temp_dept:
             recent_dept = temp_dept
             
         yrs = []
         clean_upper = upper_line.replace(' ', '')
-        if 'I/II/III' in clean_upper:
+        exact_match = re.search(r'EXACTYEAR=([I/]+)', clean_upper)
+        
+        target_str = exact_match.group(1) if exact_match else ""
+        
+        if target_str in ['I/II/III', 'III/II/I'] or (not exact_match and ('I/II/III' in clean_upper or 'III/II/I' in clean_upper)):
             yrs = ['I-YEAR', 'II-YEAR', 'III-YEAR']
-        elif 'I/II' in clean_upper:
-            yrs = ['I-YEAR', 'II-YEAR']
-        elif 'II/III' in clean_upper:
+        elif target_str in ['II/III', 'III/II'] or (not exact_match and ('II/III' in clean_upper or 'III/II' in clean_upper)):
             yrs = ['II-YEAR', 'III-YEAR']
+        elif target_str in ['I/II', 'II/I'] or (not exact_match and ('I/II' in clean_upper or 'II/I' in clean_upper)):
+            yrs = ['I-YEAR', 'II-YEAR']
+        elif target_str == 'I':
+            yrs = ['I-YEAR']
+        elif target_str == 'II':
+            yrs = ['II-YEAR']
+        elif target_str == 'III':
+            yrs = ['III-YEAR']
         else:
             yr = extract_year_from_text(upper_line)
             if not yr and 'SEMESTER' in upper_line:
@@ -105,6 +116,8 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
         return recent_dept, recent_year
 
     if filename.endswith('.xlsx') or filename.endswith('.xls'):
+        if hasattr(timetable_file, 'seek'):
+            timetable_file.seek(0)
         df = pd.read_excel(timetable_file, header=None)
         recent_dept = []
         recent_year = ''
@@ -112,9 +125,9 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
         current_date_str = ''
         current_session = ''
         
-        import re
         for idx, row in df.iterrows():
             row_vals = []
+            exact_year_str = ""
             for val in row.values:
                 if pd.isna(val):
                     continue
@@ -129,15 +142,25 @@ def get_active_classes_from_timetable(timetable_file, exam_date, exam_session):
                     if sval == 'FORENOON': current_session = 'FN'
                     elif sval == 'AFTERNOON': current_session = 'AN'
                     else: current_session = sval
+                    
+                # Check for standalone exact year cell
+                c_up = sval.replace(' ', '')
+                if c_up in ['I', 'II', 'III', 'I/II', 'II/I', 'II/III', 'III/II', 'I/II/III', 'III/II/I', 'I/III', 'III/I']:
+                    exact_year_str = c_up
+                    
+                row_vals.append(sval)
                 
-                row_vals.append(str(val))
+            if not row_vals: continue
             
             row_str = ' '.join(row_vals)
-            # Inject current date and session to make it visible to parse_line
             full_row_str = f"{row_str} {current_date_str} {current_session}"
+            if exact_year_str:
+                full_row_str = f"EXACTYEAR={exact_year_str} {full_row_str}"
             
             recent_dept, recent_year = parse_line(full_row_str, recent_dept, recent_year)
     else:
+        if hasattr(timetable_file, 'seek'):
+            timetable_file.seek(0)
         import pypdf
         reader = pypdf.PdfReader(timetable_file)
         recent_dept = []
