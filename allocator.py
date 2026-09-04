@@ -725,7 +725,12 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
             empty_middle = max_cols - 3
             
             # We have visual columns to fill. Each visual column takes `grid_rows` students.
-            hall_visual_columns = []
+            import math
+            num_blocks = 3
+            sub_cols_per_block = math.ceil(grid_cols / 3)
+            total_physical_cols = num_blocks * sub_cols_per_block
+            
+            hall_visual_columns = [[] for _ in range(total_physical_cols)]
             hall_assigned = 0
             
             # Helper to get year string
@@ -733,36 +738,42 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                 parts = d_str.split(' - ')
                 return parts[1].strip() if len(parts) > 1 else "UNKNOWN"
             
-            # Filter and sort available years
             available_years = sorted(list(set([get_year(d) for d in depts if len(students_by_dept[d]) > 0])))
             
-            # Helper to detect conflict
             def is_conflict(cand_d, cand_s, cand_y, other_d, other_s, other_y, check_year=True):
-                if check_year and cand_y == other_y: return True # Same year = side-by-side bad!
+                if check_year and cand_y == other_y: return True
                 if cand_d.split(' - ')[0].strip() == other_d.split(' - ')[0].strip(): return True
                 if cand_s and other_s and cand_s == other_s: return True
                 return False
 
-            for v_col in range(grid_cols):
+            for physical_idx in range(total_physical_cols):
                 if hall_assigned >= total_seats:
                     break
                     
-                col_students = []
+                block_idx = physical_idx // sub_cols_per_block
+                sub_col_idx = physical_idx % sub_cols_per_block
+                v_col = sub_col_idx * num_blocks + block_idx
                 
-                # Pick target year based on column index
-                target_year = available_years[v_col % len(available_years)] if available_years else "UNKNOWN"
+                if v_col >= grid_cols:
+                    continue
+                    
+                col_students = []
+                target_year = available_years[physical_idx % len(available_years)] if available_years else "UNKNOWN"
                 
                 while len(col_students) < grid_rows and hall_assigned < total_seats:
                     current_years = sorted(list(set([get_year(d) for d in depts if len(students_by_dept[d]) > 0])))
                     if not current_years: break
+                    if target_year not in current_years: target_year = current_years[0]
                     
-                    # If target year ran out, just pick the next available one logically
-                    if target_year not in current_years:
-                        target_year = current_years[0]
-                    
-                    # Determine neighbors
                     r = len(col_students)
-                    left_n = hall_visual_columns[-1][r] if v_col > 0 and r < len(hall_visual_columns[-1]) else None
+                    left_n = None
+                    if physical_idx > 0:
+                        prev_block = (physical_idx - 1) // sub_cols_per_block
+                        prev_sub = (physical_idx - 1) % sub_cols_per_block
+                        prev_v_col = prev_sub * num_blocks + prev_block
+                        if prev_v_col < grid_cols and len(hall_visual_columns[prev_v_col]) > r:
+                            left_n = hall_visual_columns[prev_v_col][r]
+                            
                     front_n = col_students[-1] if r > 0 else None
                     
                     chosen_dept = None
@@ -772,16 +783,9 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                     for d in candidates:
                         cand_s = students_by_dept[d][0].get('SUBCODE', '')
                         cand_y = get_year(d)
-                        
                         is_tgt = (cand_y == target_year)
-                        
-                        front_c = False
-                        if front_n:
-                            front_c = is_conflict(d, cand_s, cand_y, front_n['DEPT'], front_n.get('SUBCODE',''), get_year(front_n['DEPT']), check_year=False)
-                        
-                        left_c = False
-                        if left_n:
-                            left_c = is_conflict(d, cand_s, cand_y, left_n['DEPT'], left_n.get('SUBCODE',''), get_year(left_n['DEPT']), check_year=True)
+                        front_c = is_conflict(d, cand_s, cand_y, front_n['DEPT'], front_n.get('SUBCODE',''), get_year(front_n['DEPT']), check_year=False) if front_n else False
+                        left_c = is_conflict(d, cand_s, cand_y, left_n['DEPT'], left_n.get('SUBCODE',''), get_year(left_n['DEPT']), check_year=True) if left_n else False
                         
                         score = 5
                         if is_tgt and not front_c and not left_c: score = 0
@@ -793,28 +797,23 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                         if score < best_score:
                             best_score = score
                             chosen_dept = d
-                            
                         if best_score == 0: break
                     
-                    if chosen_dept is None:
-                        break
-                        
+                    if chosen_dept is None: break
+                    
                     max_allowed_for_hall = total_seats - hall_assigned
                     needed = min(grid_rows - len(col_students), max_allowed_for_hall)
-                    
-                    # Safely take chunk. To be highly precise with left conflict, take_count could be 1. 
-                    # But for consecutive reg numbers, take the full chunk needed for this department.
-                    # Since a single dept has a single Year, if left_c is false for row 'r', it is likely false for the whole chunk.
                     take_count = min(needed, len(students_by_dept[chosen_dept]))
                     
                     col_students.extend(students_by_dept[chosen_dept][:take_count])
                     students_by_dept[chosen_dept] = students_by_dept[chosen_dept][take_count:]
                     hall_assigned += take_count
                     
-                if col_students:
-                    hall_visual_columns.append(col_students)
+                hall_visual_columns[v_col] = col_students
                 
-            if not hall_visual_columns:
+            # Do not strip empty sublists because we need indices to map to physical blocks
+                
+            if not any(hall_visual_columns):
                 continue # Skip empty halls
                 
             # Format the block for this hall
