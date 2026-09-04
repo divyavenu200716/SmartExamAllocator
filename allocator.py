@@ -726,81 +726,91 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
             
             # We have visual columns to fill. Each visual column takes `grid_rows` students.
             hall_visual_columns = []
-            
-            last_dept = None
-            last_subcode = None
             hall_assigned = 0
             
+            # Helper to get year string
+            def get_year(d_str):
+                parts = d_str.split(' - ')
+                return parts[1].strip() if len(parts) > 1 else "UNKNOWN"
+            
+            # Filter and sort available years
+            available_years = sorted(list(set([get_year(d) for d in depts if len(students_by_dept[d]) > 0])))
+            
+            # Helper to detect conflict
+            def is_conflict(cand_d, cand_s, cand_y, other_d, other_s, other_y, check_year=True):
+                if check_year and cand_y == other_y: return True # Same year = side-by-side bad!
+                if cand_d.split(' - ')[0].strip() == other_d.split(' - ')[0].strip(): return True
+                if cand_s and other_s and cand_s == other_s: return True
+                return False
+
             for v_col in range(grid_cols):
                 if hall_assigned >= total_seats:
                     break
                     
                 col_students = []
                 
-                # Identify departments used in the previous column to avoid side-by-side seating
-                prev_col_entities = []
-                if v_col > 0 and len(hall_visual_columns) > 0:
-                    prev_col_entities = [(s['DEPT'], s.get('SUBCODE', '')) for s in hall_visual_columns[-1]]
+                # Pick target year based on column index
+                target_year = available_years[v_col % len(available_years)] if available_years else "UNKNOWN"
                 
-                def is_conflict(cand_d, cand_s, other_d, other_s):
-                    # Conflict if same base department (e.g. BCOM == BCOM) even across different years
-                    if cand_d.split(' - ')[0].strip() == other_d.split(' - ')[0].strip(): return True
-                    # Conflict if same exact subcode
-                    if cand_s and other_s and cand_s == other_s: return True
-                    return False
-
-                # Keep filling this column until it has `grid_rows` students OR hall is full
                 while len(col_students) < grid_rows and hall_assigned < total_seats:
+                    current_years = sorted(list(set([get_year(d) for d in depts if len(students_by_dept[d]) > 0])))
+                    if not current_years: break
+                    
+                    # If target year ran out, just pick the next available one logically
+                    if target_year not in current_years:
+                        target_year = current_years[0]
+                    
+                    # Determine neighbors
+                    r = len(col_students)
+                    left_n = hall_visual_columns[-1][r] if v_col > 0 and r < len(hall_visual_columns[-1]) else None
+                    front_n = col_students[-1] if r > 0 else None
+                    
                     chosen_dept = None
+                    candidates = [d for d in depts if len(students_by_dept[d]) > 0]
                     
-                    # PRIORITY 1: Find a dept that has NO conflict with last_seated AND NO conflict with prev_col
-                    for d in depts:
-                        if len(students_by_dept[d]) == 0: continue
-                        cand_sub = students_by_dept[d][0].get('SUBCODE', '')
+                    best_score = 999
+                    for d in candidates:
+                        cand_s = students_by_dept[d][0].get('SUBCODE', '')
+                        cand_y = get_year(d)
                         
-                        conflict_last = last_dept is not None and is_conflict(d, cand_sub, last_dept, last_subcode)
-                        conflict_prev = any(is_conflict(d, cand_sub, pd, ps) for pd, ps in prev_col_entities)
+                        is_tgt = (cand_y == target_year)
                         
-                        if not conflict_last and not conflict_prev:
+                        front_c = False
+                        if front_n:
+                            front_c = is_conflict(d, cand_s, cand_y, front_n['DEPT'], front_n.get('SUBCODE',''), get_year(front_n['DEPT']), check_year=False)
+                        
+                        left_c = False
+                        if left_n:
+                            left_c = is_conflict(d, cand_s, cand_y, left_n['DEPT'], left_n.get('SUBCODE',''), get_year(left_n['DEPT']), check_year=True)
+                        
+                        score = 5
+                        if is_tgt and not front_c and not left_c: score = 0
+                        elif is_tgt and not left_c: score = 1
+                        elif not is_tgt and not front_c and not left_c: score = 2
+                        elif not is_tgt and not left_c: score = 3
+                        elif is_tgt: score = 4
+                        
+                        if score < best_score:
+                            best_score = score
                             chosen_dept = d
-                            break
                             
-                    # PRIORITY 2: If we couldn't find one, just avoid last_dept conflict
-                    if chosen_dept is None:
-                        for d in depts:
-                            if len(students_by_dept[d]) == 0: continue
-                            cand_sub = students_by_dept[d][0].get('SUBCODE', '')
-                            
-                            conflict_last = last_dept is not None and is_conflict(d, cand_sub, last_dept, last_subcode)
-                            if not conflict_last:
-                                chosen_dept = d
-                                break
+                        if best_score == 0: break
                     
-                    # PRIORITY 3: If STILL none, just pick ANY dept that has students (last resort)
                     if chosen_dept is None:
-                        for d in depts:
-                            if len(students_by_dept[d]) > 0:
-                                chosen_dept = d
-                                break
-                                
-                    if chosen_dept is None:
-                        break # No students left at all
+                        break
                         
-                    # Calculate how many more students we need for this column, respecting hall total cap
                     max_allowed_for_hall = total_seats - hall_assigned
                     needed = min(grid_rows - len(col_students), max_allowed_for_hall)
+                    
+                    # Safely take chunk. To be highly precise with left conflict, take_count could be 1. 
+                    # But for consecutive reg numbers, take the full chunk needed for this department.
+                    # Since a single dept has a single Year, if left_c is false for row 'r', it is likely false for the whole chunk.
                     take_count = min(needed, len(students_by_dept[chosen_dept]))
                     
-                    # Add them to the column
                     col_students.extend(students_by_dept[chosen_dept][:take_count])
-                    
-                    # Update last_dept and last_subcode so we don't pick the same one consecutively
-                    last_dept = chosen_dept
-                    last_subcode = students_by_dept[chosen_dept][0].get('SUBCODE', '')
-                    
                     students_by_dept[chosen_dept] = students_by_dept[chosen_dept][take_count:]
                     hall_assigned += take_count
-                
+                    
                 if col_students:
                     hall_visual_columns.append(col_students)
                 
