@@ -746,11 +746,6 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                 if cand_s and other_s and cand_s == other_s: return True
                 return False
 
-            header = []
-            for _ in range(grid_cols):
-                header.extend(["REGISTER NUMBER", "SEAT NO"])
-            out_rows.append(header)
-            
             for physical_idx in range(total_physical_cols):
                 if hall_assigned >= total_seats:
                     break
@@ -872,7 +867,12 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
             
             out_rows.append([f"DEPT/SUB CODE : {dept_str}"] + [""] * empty_middle + [f"TOTAL : {total_assigned}", ""])
             
-            # Build the matrix
+            header = []
+            for _ in range(grid_cols):
+                header.extend(["REGISTER NUMBER", "SEAT NO"])
+            out_rows.append(header)
+            
+            # Format the block for this hallx
             import math
             num_blocks = 3
             sub_cols_per_block = math.ceil(grid_cols / 3)
