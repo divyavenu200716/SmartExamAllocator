@@ -746,6 +746,11 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                 if cand_s and other_s and cand_s == other_s: return True
                 return False
 
+            header = []
+            for _ in range(grid_cols):
+                header.extend(["REGISTER NUMBER", "SEAT NO"])
+            out_rows.append(header)
+            
             for physical_idx in range(total_physical_cols):
                 if hall_assigned >= total_seats:
                     break
@@ -884,17 +889,9 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                     if row_idx < grid_rows:
                         seat_num = v_col_idx * grid_rows + row_idx + 1
                         
-                        # Seat Number on the Left, Reg No on the Right
-                        seat_matrix[row_idx][excel_col_start] = seat_num
-                        seat_matrix[row_idx][excel_col_start + 1] = student['REG_NO']
-            
-            # Insert block headers above the matrix
-            block_headers = [''] * actual_max_cols
-            for b in range(num_blocks):
-                start = b * sub_cols_per_block * 2
-                if start < actual_max_cols:
-                    block_headers[start] = f"COLUMN {b+1:02d}"
-            out_rows.append(block_headers)
+                        # Restore original order: Reg No on Left, Seat No on Right
+                        seat_matrix[row_idx][excel_col_start] = student['REG_NO']
+                        seat_matrix[row_idx][excel_col_start + 1] = seat_num
             
             out_rows.extend(seat_matrix)
             out_rows.append([]) # Blank row
@@ -925,9 +922,9 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
         for col_idx in range(1, global_max_cols + 1):
             col_letter = openpyxl.utils.get_column_letter(col_idx)
             if col_idx % 2 != 0:
-                ws.column_dimensions[col_letter].width = 10 # SEAT NO columns
-            else:
                 ws.column_dimensions[col_letter].width = 18 # REGISTER NUMBER columns
+            else:
+                ws.column_dimensions[col_letter].width = 10 # SEAT NO columns
                 
         # Apply borders and alignments
         for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=global_max_cols):
@@ -983,16 +980,5 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
             elif "DEPT/SUB CODE :" in first_cell_val:
                 ws.merge_cells(start_row=row[0].row, start_column=1, end_row=row[0].row, end_column=global_max_cols-2)
                 ws.merge_cells(start_row=row[0].row, start_column=global_max_cols-1, end_row=row[0].row, end_column=global_max_cols)
-            elif str(first_cell_val).startswith("COLUMN"):
-                # Dynamically merge based on non-empty cells in this row
-                col_starts = []
-                for c_idx, cell in enumerate(row):
-                    if cell.value and str(cell.value).startswith("COLUMN"):
-                        col_starts.append(c_idx + 1)
-                for i in range(len(col_starts)):
-                    start_c = col_starts[i]
-                    end_c = col_starts[i+1] - 1 if i + 1 < len(col_starts) else global_max_cols
-                    if start_c < end_c:
-                        ws.merge_cells(start_row=row[0].row, start_column=start_c, end_row=row[0].row, end_column=end_c)
         
     return output.getvalue()
