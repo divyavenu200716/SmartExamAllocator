@@ -4,7 +4,7 @@ import io
 import os
 from allocator import process_allocation, get_student_classes, get_active_classes_from_timetable
 
-st.set_page_config(page_title="KASC SMART SEAT", page_icon="logo.png", layout="centered", initial_sidebar_state="expanded")
+st.set_page_config(page_title="KASC SMART SEAT", page_icon="logo.png", layout="centered", initial_sidebar_state="collapsed")
 
 # Hide Streamlit Watermark and Add Custom Modern CSS
 custom_style = """
@@ -17,6 +17,14 @@ div[class^="creator"] {display: none !important;}
 img[alt*="Creator"] {display: none !important;}
 [title*="Creator"] {display: none !important;}
 
+/* Hide the sidebar completely */
+[data-testid="stSidebar"] {
+    display: none !important;
+}
+[data-testid="collapsedControl"] {
+    display: none !important;
+}
+
 /* App background with a subtle blue-black gradient */
 .stApp {
     background: linear-gradient(135deg, #050505 0%, #0a1128 50%, #050505 100%);
@@ -25,12 +33,6 @@ img[alt*="Creator"] {display: none !important;}
 /* Clean text colors */
 h1, h2, h3, h4, h5, h6 {
     color: #ffffff !important;
-}
-
-/* Sidebar with a deep blue-black tint */
-[data-testid="stSidebar"] {
-    background-color: #0b1320;
-    border-right: 1px solid #1c2e4a;
 }
 
 /* Stylish Primary Buttons */
@@ -80,24 +82,24 @@ with col1:
 with col2:
     st.title("🎓 KASC SMART SEAT")
 st.markdown("### 🪑 Automated Seating Arrangement Generator")
-st.info("👈 Please use the sidebar on the left to upload your files and configure the exam settings.")
+st.info("💡 Please upload your files and configure the exam settings below.")
 
 
-# --- SIDEBAR ---
-st.sidebar.title("📁 Configuration")
+# --- MAIN PAGE CONFIGURATION ---
+st.markdown("### ⚙️ Configuration")
 
-with st.sidebar.expander("📂 1. Hall Details (Excel/PDF)", expanded=False):
+with st.expander("📂 1. Hall Details (Excel/PDF)", expanded=True):
     hall_file = st.file_uploader("Select Hall File", type=['xlsx', 'xls', 'csv', 'pdf'], label_visibility="collapsed")
     st.markdown("*(Excel: HALL NO, TOTAL SEAT, ROWS, COLUMNS)*")
 
-with st.sidebar.expander("📂 2. Student Details (Excel/PDF)", expanded=False):
-    student_files = st.file_uploader("Select Student Files", type=['xlsx', 'xls', 'csv', 'pdf'], accept_multiple_files=True, label_visibility="collapsed")
+with st.expander("👥 2. Student Details (Excel/PDF)", expanded=True):
+    student_files = st.file_uploader("Select Student Files (You can select multiple files or drag a folder)", type=['xlsx', 'xls', 'csv', 'pdf'], accept_multiple_files=True, label_visibility="collapsed")
     st.markdown("*(Upload one or multiple files)*")
 
-with st.sidebar.expander("📂 3. Time Table (Excel/PDF)", expanded=False):
+with st.expander("📅 3. Time Table (Excel/PDF)", expanded=True):
     timetable_file = st.file_uploader("Select Time Table", type=['pdf', 'xlsx', 'xls', 'csv'], label_visibility="collapsed")
 
-with st.sidebar.expander("⚙️ 4. Exam Settings", expanded=False):
+with st.expander("⚙️ 4. Exam Settings", expanded=True):
     st.markdown("*(Required for auto-detection)*")
     exam_title = st.text_input("Exam Title", value="PERIYAR UNIVERSITY THEORY EXAMINATIONS - APR/MAY")
     exam_date = st.text_input("Exam Date (e.g., 28-04-2025)", value="")
@@ -113,7 +115,7 @@ if student_files:
         if timetable_file and exam_date and exam_session:
             detected = get_active_classes_from_timetable(timetable_file, exam_date, exam_session)
             if not detected:
-                st.sidebar.warning("⚠️ Auto-detection couldn't find classes.")
+                st.warning("⚠️ Auto-detection couldn't find classes.")
             # Fuzzy match detected classes against available classes
             auto_set = set()
             import re
@@ -128,7 +130,7 @@ if student_files:
                         auto_set.add(a)
             auto_detected = list(auto_set)
             
-        with st.sidebar.expander("🎓 5. Classes taking the Exam", expanded=False):
+        with st.expander("✅ 5. Classes taking the Exam", expanded=True):
             if auto_detected:
                 st.success("✨ Classes auto-detected from Time Table!")
             else:
@@ -138,9 +140,9 @@ if student_files:
             ms_key = f"classes_ms_{exam_date}_{exam_session}_{len(auto_detected)}"
             selected_classes = st.multiselect("Confirm Classes", available_classes, default=auto_detected, label_visibility="collapsed", key=ms_key)
     except Exception as e:
-        st.sidebar.error(f"Could not parse student details: {e}")
+        st.error(f"Could not parse student details: {e}")
 
-# --- MAIN PAGE ---
+# --- FINAL STEP ---
 st.markdown("---")
 st.markdown("### 🚀 Final Step")
 if st.button("✨ Generate Seating Arrangement", use_container_width=True):
@@ -152,7 +154,7 @@ if st.button("✨ Generate Seating Arrangement", use_container_width=True):
                 st.success("🎉 Seating Arrangement Generated Successfully!")
                 
                 st.download_button(
-                    label="⬇️ Download Seating Arrangement",
+                    label="📥 Download Seating Arrangement",
                     data=output_excel_bytes,
                     file_name="Generated_Seating_Arrangement.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -163,8 +165,8 @@ if st.button("✨ Generate Seating Arrangement", use_container_width=True):
                 st.error(f"❌ An error occurred during generation: {e}")
                 st.code(traceback.format_exc())
     else:
-        st.warning("⚠️ Please upload all files, fill Exam Date in the sidebar, and confirm at least one class.")
+        st.warning("⚠️ Please upload all files, fill Exam Date, and confirm at least one class.")
 
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #a0aec0; font-size: 0.9rem;'>💻 Developed by <b>Divyavenugopal (Final Year AI&DS)</b></p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #a0aec0; font-size: 0.9rem;'>💡 Developed by <b>Divyavenugopal (Final Year AI&DS)</b></p>", unsafe_allow_html=True)
