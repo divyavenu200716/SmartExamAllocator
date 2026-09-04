@@ -746,6 +746,8 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                 if cand_s and other_s and cand_s == other_s: return True
                 return False
 
+            active_classes = {} # target_year -> dept
+
             for physical_idx in range(total_physical_cols):
                 if hall_assigned >= total_seats:
                     break
@@ -765,39 +767,46 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                     if not current_years: break
                     if target_year not in current_years: target_year = current_years[0]
                     
-                    r = len(col_students)
-                    left_n = None
-                    if physical_idx > 0:
-                        prev_block = (physical_idx - 1) // sub_cols_per_block
-                        prev_sub = (physical_idx - 1) % sub_cols_per_block
-                        prev_v_col = prev_sub * num_blocks + prev_block
-                        if prev_v_col < grid_cols and len(hall_visual_columns[prev_v_col]) > r:
-                            left_n = hall_visual_columns[prev_v_col][r]
-                            
-                    front_n = col_students[-1] if r > 0 else None
-                    
-                    chosen_dept = None
                     candidates = [d for d in depts if len(students_by_dept[d]) > 0]
+                    chosen_dept = None
                     
-                    best_score = 999
-                    for d in candidates:
-                        cand_s = students_by_dept[d][0].get('SUBCODE', '')
-                        cand_y = get_year(d)
-                        is_tgt = (cand_y == target_year)
-                        front_c = is_conflict(d, cand_s, cand_y, front_n['DEPT'], front_n.get('SUBCODE',''), get_year(front_n['DEPT']), check_year=False) if front_n else False
-                        left_c = is_conflict(d, cand_s, cand_y, left_n['DEPT'], left_n.get('SUBCODE',''), get_year(left_n['DEPT']), check_year=True) if left_n else False
+                    if target_year in active_classes and active_classes[target_year] in candidates:
+                        # Continue with the active class for this year until it's finished
+                        chosen_dept = active_classes[target_year]
+                    else:
+                        r = len(col_students)
+                        left_n = None
+                        if physical_idx > 0:
+                            prev_block = (physical_idx - 1) // sub_cols_per_block
+                            prev_sub = (physical_idx - 1) % sub_cols_per_block
+                            prev_v_col = prev_sub * num_blocks + prev_block
+                            if prev_v_col < grid_cols and len(hall_visual_columns[prev_v_col]) > r:
+                                left_n = hall_visual_columns[prev_v_col][r]
+                                
+                        front_n = col_students[-1] if r > 0 else None
                         
-                        score = 5
-                        if is_tgt and not front_c and not left_c: score = 0
-                        elif is_tgt and not left_c: score = 1
-                        elif not is_tgt and not front_c and not left_c: score = 2
-                        elif not is_tgt and not left_c: score = 3
-                        elif is_tgt: score = 4
+                        best_score = 999
+                        for d in candidates:
+                            cand_s = students_by_dept[d][0].get('SUBCODE', '')
+                            cand_y = get_year(d)
+                            is_tgt = (cand_y == target_year)
+                            front_c = is_conflict(d, cand_s, cand_y, front_n['DEPT'], front_n.get('SUBCODE',''), get_year(front_n['DEPT']), check_year=False) if front_n else False
+                            left_c = is_conflict(d, cand_s, cand_y, left_n['DEPT'], left_n.get('SUBCODE',''), get_year(left_n['DEPT']), check_year=True) if left_n else False
+                            
+                            score = 5
+                            if is_tgt and not front_c and not left_c: score = 0
+                            elif is_tgt and not left_c: score = 1
+                            elif not is_tgt and not front_c and not left_c: score = 2
+                            elif not is_tgt and not left_c: score = 3
+                            elif is_tgt: score = 4
+                            
+                            if score < best_score:
+                                best_score = score
+                                chosen_dept = d
+                            if best_score == 0: break
                         
-                        if score < best_score:
-                            best_score = score
-                            chosen_dept = d
-                        if best_score == 0: break
+                        if chosen_dept:
+                            active_classes[target_year] = chosen_dept
                     
                     if chosen_dept is None: break
                     
