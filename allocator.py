@@ -773,18 +773,25 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                     if target_year in active_classes and active_classes[target_year] in candidates:
                         # Continue with the active class for this year until it's finished
                         chosen_dept = active_classes[target_year]
-                    else:
-                        r = len(col_students)
-                        left_n = None
-                        if physical_idx > 0:
-                            prev_block = (physical_idx - 1) // sub_cols_per_block
-                            prev_sub = (physical_idx - 1) % sub_cols_per_block
-                            prev_v_col = prev_sub * num_blocks + prev_block
-                            if prev_v_col < grid_cols and len(hall_visual_columns[prev_v_col]) > r:
-                                left_n = hall_visual_columns[prev_v_col][r]
-                                
-                        front_n = col_students[-1] if r > 0 else None
-                        
+                    
+                    r = len(col_students)
+                    left_n = None
+                    if physical_idx > 0:
+                        prev_block = (physical_idx - 1) // sub_cols_per_block
+                        prev_sub = (physical_idx - 1) % sub_cols_per_block
+                        prev_v_col = prev_sub * num_blocks + prev_block
+                        if prev_v_col < grid_cols and len(hall_visual_columns[prev_v_col]) > r:
+                            left_n = hall_visual_columns[prev_v_col][r]
+                            
+                    front_n = col_students[-1] if r > 0 else None
+                    
+                    # If active_classes chose a dept that conflicts with the left seat, we MUST re-evaluate!
+                    if chosen_dept and left_n and chosen_dept == left_n['DEPT']:
+                        chosen_dept = None
+                        if target_year in active_classes:
+                            del active_classes[target_year] # Break the forced continuation to prevent side-by-side
+                            
+                    if not chosen_dept:
                         best_score = 999
                         for d in candidates:
                             cand_s = students_by_dept[d][0].get('SUBCODE', '')
@@ -807,6 +814,13 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
                         
                         if chosen_dept:
                             active_classes[target_year] = chosen_dept
+                    
+                    # FINAL STRICT CHECK: Even after all that, if the chosen dept STILL conflicts with the left seat (e.g. it's the ONLY class left),
+                    # we MUST NOT put it here! We must leave this column/seat empty!
+                    if chosen_dept and left_n and chosen_dept == left_n['DEPT']:
+                        chosen_dept = None # Leave empty
+                        if target_year in active_classes:
+                            del active_classes[target_year]
                     
                     if chosen_dept is None: break
                     
