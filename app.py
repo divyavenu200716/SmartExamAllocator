@@ -29,55 +29,32 @@ img[alt*="Creator"] {display: none !important;}
 [data-testid="stToolbar"] {display: none !important;}
 .stDeployButton {display: none !important;}
 
-/* Sidebar Radio Buttons */
-[data-testid="stSidebar"] {
-    background-color: #0a2540 !important;
+/* App background with a subtle blue-black gradient */
+.stApp {
+    background: linear-gradient(135deg, #050505 0%, #0a1128 50%, #050505 100%);
 }
-[data-testid="stSidebar"] h1, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] span {
+
+/* Clean text colors */
+h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, span, div[data-testid="stText"] {
     color: #ffffff !important;
+}
+
+/* Sidebar styling */
+[data-testid="stSidebar"] {
+    background-color: #0b1320 !important;
+    border-right: 1px solid #1c2e4a;
 }
 .stRadio > div {
     gap: 15px;
 }
-.stRadio label, .stRadio p, .stRadio span {
-    color: #ffffff !important;
+.stRadio label {
     font-size: 1.1rem !important;
     font-weight: 500;
 }
 
-/* Stylish Primary Buttons */
-.stButton>button {
-    background: #0a2540 !important;
-    color: white !important;
-    border: none;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(10, 37, 64, 0.3);
-    transition: all 0.3s ease;
-    font-weight: bold;
-}
-.stButton>button:hover {
-    background: #113b66 !important;
-    box-shadow: 0 6px 15px rgba(10, 37, 64, 0.5);
-    transform: translateY(-2px);
-}
-
-/* Fix File Uploader Dropzone */
-[data-testid="stFileUploadDropzone"] {
-    background-color: #f0f4f8 !important;
-    border: 2px dashed #0a2540 !important;
-    border-radius: 8px !important;
-}
-[data-testid="stFileUploadDropzone"] div {
-    color: #0a2540 !important;
-}
-[data-testid="stFileUploadDropzone"] button {
-    background-color: #0a2540 !important;
-    color: #ffffff !important;
-}
-
 /* Sidebar Expand/Collapse Button (>) */
 [data-testid="collapsedControl"] {
-    background-color: #0a2540 !important;
+    background-color: #0b1320 !important;
     color: #ffffff !important;
     border-radius: 8px !important;
     padding: 5px !important;
@@ -88,25 +65,39 @@ img[alt*="Creator"] {display: none !important;}
     color: #ffffff !important;
 }
 
+/* Stylish Primary Buttons */
+.stButton>button {
+    background: linear-gradient(45deg, #0072ff, #00c6ff) !important;
+    color: white !important;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 198, 255, 0.4);
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+.stButton>button:hover {
+    box-shadow: 0 6px 20px rgba(0, 198, 255, 0.6);
+    transform: translateY(-2px);
+}
+
 /* Expander headers and uploaders */
-.stExpander {
-    background-color: #f4f7fb !important;
-    border: 1px solid #c8d6e5 !important;
+.stExpander, div[data-testid="stFileUploader"] {
+    background-color: #121f33 !important;
+    border: 1px solid #1f3659 !important;
     border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
 
 /* Download buttons and links */
 .stDownloadButton>button {
-    background: #0066cc !important;
+    background: linear-gradient(45deg, #11998e, #38ef7d) !important;
     color: white !important;
     border: none;
-    box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3);
+    box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4);
 }
 .stDownloadButton>button:hover {
-    background: #005bb5 !important;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 102, 204, 0.5);
+    box-shadow: 0 6px 20px rgba(56, 239, 125, 0.6);
 }
 </style>
 """
