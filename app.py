@@ -30,10 +30,17 @@ img[alt*="Creator"] {display: none !important;}
 .stDeployButton {display: none !important;}
 
 /* Sidebar Radio Buttons */
+[data-testid="stSidebar"] {
+    background-color: #0a2540 !important;
+}
+[data-testid="stSidebar"] h1, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] span {
+    color: #ffffff !important;
+}
 .stRadio > div {
     gap: 15px;
 }
-.stRadio label {
+.stRadio label, .stRadio p, .stRadio span {
+    color: #ffffff !important;
     font-size: 1.1rem !important;
     font-weight: 500;
 }
