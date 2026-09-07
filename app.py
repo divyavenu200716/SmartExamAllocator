@@ -26,6 +26,8 @@ div[class^="creator"] {display: none !important;}
 img[alt*="Creator"] {display: none !important;}
 [title*="Creator"] {display: none !important;}
 .stDeployButton {display: none !important;}
+.stAppDeployButton {display: none !important;}
+[data-testid="stAppDeployButton"] {display: none !important;}
 
 /* App background with a subtle blue-black gradient */
 .stApp {
