@@ -25,6 +25,7 @@ div[class^="viewerBadge"] {display: none !important;}
 div[class^="creator"] {display: none !important;}
 img[alt*="Creator"] {display: none !important;}
 [title*="Creator"] {display: none !important;}
+[data-testid="stHeader"] {background-color: #0b1320 !important;}
 .stDeployButton {display: none !important;}
 .stAppDeployButton {display: none !important;}
 [data-testid="stAppDeployButton"] {display: none !important;}
