@@ -25,8 +25,6 @@ div[class^="viewerBadge"] {display: none !important;}
 div[class^="creator"] {display: none !important;}
 img[alt*="Creator"] {display: none !important;}
 [title*="Creator"] {display: none !important;}
-[data-testid="stHeader"] {background-color: transparent !important;}
-[data-testid="stToolbar"] {display: none !important;}
 .stDeployButton {display: none !important;}
 
 /* App background with a subtle blue-black gradient */
@@ -50,19 +48,6 @@ h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, span, div[data-testid="stText"] {
 .stRadio label {
     font-size: 1.1rem !important;
     font-weight: 500;
-}
-
-/* Sidebar Expand/Collapse Button (>) */
-[data-testid="collapsedControl"] {
-    background-color: #0b1320 !important;
-    color: #ffffff !important;
-    border-radius: 8px !important;
-    padding: 5px !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3) !important;
-}
-[data-testid="collapsedControl"] svg {
-    fill: #ffffff !important;
-    color: #ffffff !important;
 }
 
 /* Stylish Primary Buttons */
