@@ -67,6 +67,19 @@ img[alt*="Creator"] {display: none !important;}
     color: #ffffff !important;
 }
 
+/* Sidebar Expand/Collapse Button (>) */
+[data-testid="collapsedControl"] {
+    background-color: #0a2540 !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+    padding: 5px !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3) !important;
+}
+[data-testid="collapsedControl"] svg {
+    fill: #ffffff !important;
+    color: #ffffff !important;
+}
+
 /* Expander headers and uploaders */
 .stExpander {
     background-color: #f4f7fb !important;
