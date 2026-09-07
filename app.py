@@ -53,8 +53,22 @@ img[alt*="Creator"] {display: none !important;}
     transform: translateY(-2px);
 }
 
+/* Fix File Uploader Dropzone */
+[data-testid="stFileUploadDropzone"] {
+    background-color: #f0f4f8 !important;
+    border: 2px dashed #0a2540 !important;
+    border-radius: 8px !important;
+}
+[data-testid="stFileUploadDropzone"] div {
+    color: #0a2540 !important;
+}
+[data-testid="stFileUploadDropzone"] button {
+    background-color: #0a2540 !important;
+    color: #ffffff !important;
+}
+
 /* Expander headers and uploaders */
-.stExpander, div[data-testid="stFileUploader"] {
+.stExpander {
     background-color: #f4f7fb !important;
     border: 1px solid #c8d6e5 !important;
     border-radius: 10px;
