@@ -25,7 +25,8 @@ div[class^="viewerBadge"] {display: none !important;}
 div[class^="creator"] {display: none !important;}
 img[alt*="Creator"] {display: none !important;}
 [title*="Creator"] {display: none !important;}
-[data-testid="stHeader"] {display: none !important;}
+[data-testid="stHeader"] {background-color: transparent !important;}
+[data-testid="stToolbar"] {display: none !important;}
 .stDeployButton {display: none !important;}
 
 /* Sidebar Radio Buttons */
