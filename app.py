@@ -28,21 +28,27 @@ img[alt*="Creator"] {display: none !important;}
 [data-testid="stHeader"] {display: none !important;}
 .stDeployButton {display: none !important;}
 
-/* App background with a subtle blue-black gradient */
+/* App background - White */
 .stApp {
-    background: linear-gradient(135deg, #050505 0%, #0a1128 50%, #050505 100%);
+    background-color: #ffffff;
 }
 
-/* Clean text colors */
-h1, h2, h3, h4, h5, h6, p {
+/* Text in main app - Thick Blue */
+h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, div[data-testid="stText"] {
+    color: #0a2540 !important;
+}
+
+/* Sidebar styling - Thick Blue */
+[data-testid="stSidebar"] {
+    background-color: #0a2540 !important;
+    border-right: 1px solid #06182c;
+}
+/* Text in sidebar - White */
+[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] .stMarkdown, [data-testid="stSidebar"] div {
     color: #ffffff !important;
 }
 
-/* Sidebar styling */
-[data-testid="stSidebar"] {
-    background-color: #0b1320;
-    border-right: 1px solid #1c2e4a;
-}
+/* Sidebar Radio Buttons */
 .stRadio > div {
     gap: 15px;
 }
@@ -53,37 +59,39 @@ h1, h2, h3, h4, h5, h6, p {
 
 /* Stylish Primary Buttons */
 .stButton>button {
-    background: linear-gradient(45deg, #0072ff, #00c6ff);
+    background: #0a2540 !important;
     color: white !important;
     border: none;
     border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 198, 255, 0.4);
+    box-shadow: 0 4px 10px rgba(10, 37, 64, 0.3);
     transition: all 0.3s ease;
     font-weight: bold;
 }
 .stButton>button:hover {
-    box-shadow: 0 6px 20px rgba(0, 198, 255, 0.6);
+    background: #113b66 !important;
+    box-shadow: 0 6px 15px rgba(10, 37, 64, 0.5);
     transform: translateY(-2px);
 }
 
 /* Expander headers and uploaders */
 .stExpander, div[data-testid="stFileUploader"] {
-    background-color: #121f33;
-    border: 1px solid #1f3659;
+    background-color: #f4f7fb !important;
+    border: 1px solid #c8d6e5 !important;
     border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
 /* Download buttons and links */
 .stDownloadButton>button {
-    background: linear-gradient(45deg, #11998e, #38ef7d);
+    background: #0066cc !important;
     color: white !important;
     border: none;
-    box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4);
+    box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3);
 }
 .stDownloadButton>button:hover {
+    background: #005bb5 !important;
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(56, 239, 125, 0.6);
+    box-shadow: 0 6px 20px rgba(0, 102, 204, 0.5);
 }
 </style>
 """
