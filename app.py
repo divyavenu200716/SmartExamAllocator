@@ -28,26 +28,6 @@ img[alt*="Creator"] {display: none !important;}
 [data-testid="stHeader"] {display: none !important;}
 .stDeployButton {display: none !important;}
 
-/* App background - White */
-.stApp {
-    background-color: #ffffff;
-}
-
-/* Text in main app - Thick Blue */
-h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, div[data-testid="stText"] {
-    color: #0a2540 !important;
-}
-
-/* Sidebar styling - Thick Blue */
-[data-testid="stSidebar"] {
-    background-color: #0a2540 !important;
-    border-right: 1px solid #06182c;
-}
-/* Text in sidebar - White */
-[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label, [data-testid="stSidebar"] .stMarkdown, [data-testid="stSidebar"] div {
-    color: #ffffff !important;
-}
-
 /* Sidebar Radio Buttons */
 .stRadio > div {
     gap: 15px;
