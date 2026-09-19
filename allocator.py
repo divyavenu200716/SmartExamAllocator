@@ -680,6 +680,7 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
 
     # 4. Allocation Logic
     # Group students by Department
+    import random
     students_by_dept = {}
     for s in all_students:
         dept = s['DEPT']
@@ -687,7 +688,12 @@ def process_allocation(hall_file, student_files, timetable_file, exam_date, exam
             students_by_dept[dept] = []
         students_by_dept[dept].append(s)
         
+    # Shuffle students within each department and shuffle the department list
+    for dept in students_by_dept:
+        random.shuffle(students_by_dept[dept])
+        
     depts = list(students_by_dept.keys())
+    random.shuffle(depts)
     
     # Create the output excel in memory
     output = io.BytesIO()
